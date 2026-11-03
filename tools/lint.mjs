@@ -40,13 +40,15 @@ if (B.meta.next_file && !/^stories\/[\w-]+\.json$/.test(B.meta.next_file)) E('me
 if (B.meta.next_file && !B.meta.first_file && !B.meta.prev_file) W('meta', '다음 장이 있는 첫 장에는 first_file(자기 경로)을 적어 두면 「처음부터」가 안전함');
 
 const surface = [];
-let luckGives = 0, bigs = [];
+let luckGives = 0, bigs = [], forks = 0;
 const say = (id, s) => typeof s === 'string' && surface.push([id, s]);
 const atoms = c => !c ? [] : (Array.isArray(c) ? c : [c]).flatMap(x => x.split('|')).map(a => a.replace(/^!/, ''));
 const checkCond = (id, c) => atoms(c).forEach(a => {
   const [k, v] = a.split(':');
   if (k === 'job') { if (!jobs.has(v)) E(id, `없는 직업 조건 ${a}`); }
   else if (k === 'trait') { if (!traits.has(v)) E(id, `없는 특징 조건 ${a}`); }
+  else if (k === 'lives') { if (!/^\d+$/.test(v)) E(id, `lives 는 숫자: ${a}`); }
+  else if (k === 'lived') { /* 지난 인생의 깃발 — 어느 장의 것이든 된다 */ }
   else if (k === 'res') { const m = v.match(/^(\w+)(>=|<=|>|<|=)(-?\d+)$/); if (!m || !resIds.has(m[1])) E(id, `잘못된 자원 조건 ${a}`); }
   else if (k in used) used[k].push([id, v]);
   else E(id, `알 수 없는 조건 ${a}`);
@@ -84,6 +86,7 @@ for (const id of ids) {
   const n = N[id];
   if (nums.has(n.n)) E(id, `페이지 번호 ${n.n} 이 ${nums.get(n.n)} 와 겹침`); else nums.set(n.n, id);
   if (n.when) say(id, n.when);
+  if (n.fork) { say(id, n.fork); (n.choices || []).forEach((c, i) => { if (!c.life) W(`${id}#${i + 1}`, '갈림길 선택지에 life(짧은 말)가 없음 — 라벨이 대신 쓰인다'); say(id, c.life); }); forks++; }
   if (n.img) {
     if (!/^art\/[\w-]+\.(webp|png|jpg)$/.test(n.img)) E(id, `그림 경로는 art/<이름>.webp 꼴이어야 함: ${n.img}`);
     else if (!existsSync(join(here, '..', 'art', SERIES, n.img.slice(4)))) E(id, `그림이 아직 없음: art/${SERIES}/${n.img.slice(4)} — python3 tools/art.py ${SERIES} ${n.img.slice(4, -5)} <Recraft 주소>`);
@@ -143,7 +146,8 @@ if (!bigs.length) W('meta', '결정적 순간(check.big)이 없음 — 장마다
 if (bigs.length > 2) W('meta', `결정적 순간이 ${bigs.length}개 (${bigs.join(', ')}) — 장마다 하나`);
 const safeSpots = ids.filter(id => { const ch = N[id].choices || []; return ch.some(c => c.check) && ch.some(c => !c.check); }).length;
 if (safeSpots + luckGives < 3) W('meta', `복이 쌓일 자리가 ${safeSpots + luckGives}곳뿐 — 셋 이상 권장`);
-console.log(`${B.meta.title} · ${ids.length}쪽 · 닿는 쪽 ${seen.size} · 결정적 순간 ${bigs.length} · 복 자리 ${safeSpots + luckGives}`);
+if (forks > 2) W('meta', `갈림길이 ${forks}개 — 장마다 한두 개`);
+console.log(`${B.meta.title} · ${ids.length}쪽 · 닿는 쪽 ${seen.size} · 결정적 순간 ${bigs.length} · 복 자리 ${safeSpots + luckGives} · 갈림길 ${forks}`);
 errors.forEach(e => console.log('오류 ' + e));
 warns.forEach(w => console.log('주의 ' + w));
 console.log(errors.length ? `통과 못 함: 오류 ${errors.length}개` : `통과 (주의 ${warns.length}개)`);

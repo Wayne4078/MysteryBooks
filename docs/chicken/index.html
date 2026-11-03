@@ -217,6 +217,24 @@ html[data-body="serif"] .ch .lbl b,html[data-body="serif"] .tr b{font-weight:700
 .end h2{color:var(--ink);border-bottom:3px double var(--ink);padding-bottom:8px}
 .row{border-bottom-style:dotted}
 .err{color:var(--desk-ink)}
+.btns .big.alt{border-color:var(--desk-ink);color:var(--desk-ink)}
+
+/* 그래, 결심했어! — 도장처럼 찍힌다 */
+.stamp{margin:0 auto 16px;max-width:300px;text-align:center;border:3px double var(--accent);color:var(--accent);padding:8px 12px 10px;transform:rotate(-2.5deg);animation:stamp .45s cubic-bezier(.2,1.6,.4,1)}
+.stamp b{display:block;font-family:var(--f-disp);font-weight:800;font-size:28px;line-height:1.3}
+.stamp span{display:block;font-size:16px;font-weight:700}
+@keyframes stamp{from{transform:rotate(-2.5deg) scale(1.6);opacity:0}to{transform:rotate(-2.5deg) scale(1);opacity:1}}
+.endsec{font-family:var(--f-disp);font-weight:800;font-size:22px;margin:22px 0 8px;padding-bottom:6px;border-bottom:3px double var(--line)}
+.forks{display:flex;flex-direction:column;gap:12px}
+.fork{display:flex;flex-direction:column;gap:8px}
+.fork b{display:block;font-size:18px;font-weight:800}
+.fork i{display:block;font-style:normal;font-size:16px;font-weight:700;color:var(--ink2)}
+.lives{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:12px}
+.lives li{border-bottom:1.5px dotted var(--line);padding-bottom:10px}
+.lives b{display:block;font-size:17px;font-weight:800;color:var(--accent)}
+.lives span{display:block;font-size:16px;font-weight:700}
+.lives i{display:block;font-style:normal;font-size:16px;color:var(--ink2)}
+@media (prefers-reduced-motion:reduce){.stamp{animation:none}}
 
 /* 책갈피 */
 .toolbar{gap:8px;align-items:stretch;flex-wrap:nowrap}
@@ -281,8 +299,8 @@ function clearSave(){try{localStorage.removeItem(KEY())}catch(e){}}
    새로 받는 것: 책갈피 2번, 주사위 기록. 새 장에만 있는 자원은 그 장의 시작값으로. */
 const SERIES=()=>B.meta.series||B.meta.id.replace(/-\d+$/,'');
 const RKEY=()=>'gamebook-record:'+SERIES(), CKEY=()=>'gamebook-current:'+SERIES();
-function saveRecord(){try{const{job,traits,res,max,insp,luck,items,comp,flags,crits,fortune}=S;
- localStorage.setItem(RKEY(),JSON.stringify({from:B.meta.id,chapter:B.meta.chapter,job,traits,res,max,insp,luck,items,comp,flags,crits,fortune}))}catch(e){}}
+function saveRecord(){try{const{job,traits,res,max,insp,luck,items,comp,flags,crits,fortune,forks}=S;
+ localStorage.setItem(RKEY(),JSON.stringify({from:B.meta.id,chapter:B.meta.chapter,job,traits,res,max,insp,luck,items,comp,flags,crits,fortune,forks}))}catch(e){}}
 function loadRecord(){try{const r=JSON.parse(localStorage.getItem(RKEY())||'null');return r&&r.job?r:null}catch(e){return null}}
 function clearRecord(){try{localStorage.removeItem(RKEY());localStorage.removeItem(CKEY())}catch(e){}}
 function nextChapter(){
@@ -295,7 +313,20 @@ function nextChapter(){
   .catch(()=>{app.innerHTML='<p class="err">다음 장을 불러오지 못했습니다. 잠시 후 다시 열어 주세요.</p>'});
 }
 
-function fresh(){return{screen:'cover',job:null,traits:[],res:{},max:{},insp:0,luck:1,marks:2,items:[],comp:[],flags:{},crits:[],node:null,check:null,rolls:[],delta:[],when:null,fortune:1,streak:0};}
+/* ----- 다시 사는 책: 갈림길과 인생 기록 -----
+   갈림길(page.fork = 이름, choice.life = 짧은 말): 고르는 순간의 상태를 통째로 남겨 둔다. 장을 끝내면 "다른 길로 살아 보기"로
+   그 순간에 돌아가 반대쪽 인생을 산다. 끝까지 산 인생은 이 기기에 쌓이고(lives), 다음 판의 글이 그걸 기억할 수 있다. */
+const LKEY=()=>'gamebook-lives:'+SERIES();
+function lives(){try{return JSON.parse(localStorage.getItem(LKEY())||'[]')}catch(e){return[]}}
+function saveLife(){if(S.lifeSaved)return;S.lifeSaved=1;const end=paras(B.nodes[S.node]).join(' ');
+ try{const L=lives();L.push({job:job()?.name||'',chapter:B.meta.chapter,took:(S.forks||[]).map(f=>f.took),flags:Object.keys(S.flags),end:end.replace(/\*\*/g,'')});localStorage.setItem(LKEY(),JSON.stringify(L.slice(-20)))}catch(e){}save()}
+function relive(i){const f=(S.forks||[])[i];if(!f)return;
+ const nS=clone(f.snap);nS.reliveAvoid={node:f.node,ti:f.ti,took:f.took};nS.lifeSaved=0;markSnap=null;
+ if(f.file&&f.file!==CUR){app.innerHTML='<p class="err">그날로 돌아가는 중…</p>';try{localStorage.setItem(CKEY(),f.file)}catch(e){};load(f.file,{S:nS})}
+ else{S=nS;save();render(true)}}
+const ORD=['첫','두','세','네','다섯','여섯','일곱','여덟','아홉','열'];
+
+function fresh(){return{screen:'cover',job:null,traits:[],res:{},max:{},insp:0,luck:1,marks:2,items:[],comp:[],flags:{},crits:[],node:null,check:null,rolls:[],delta:[],when:null,fortune:1,streak:0,forks:[]};}
 
 /* ----- 복: 화면에 절대 안 보이는 운. 복은 쌓이고, 주사위는 복을 쓴다 -----
    쌓이는 곳: 운에 맡기지 않고 다른 길을 고를 때, ★ 직업다운 행동, 작가가 do.luck 으로 표시한 선택, 대참사를 겪은 뒤(액땜).
@@ -307,6 +338,8 @@ function addFortune(v){S.fortune=Math.max(0,Math.min(FMAX,(S.fortune||0)+v))}
 
 /* ----- 조건과 효과 ----- */
 function atom(a){const neg=a[0]==='!';if(neg)a=a.slice(1);const[k,v]=a.split(':');
+ if(k==='lives'){const r=lives().length>=+v;return neg?!r:r}
+ if(k==='lived'){const r=lives().some(l=>(l.flags||[]).includes(v));return neg?!r:r}
  if(k==='res'){const m=v.match(/^(\w+)(>=|<=|>|<|=)(-?\d+)$/);if(!m)return false;const x=S.res[m[1]]??0,n=+m[3];const r=m[2]==='>='?x>=n:m[2]==='<='?x<=n:m[2]==='>'?x>n:m[2]==='<'?x<n:x===n;return neg?!r:r}
  const r=k==='flag'?!!S.flags[v]:k==='has'?S.items.includes(v):k==='job'?S.job===v:k==='trait'?S.traits.includes(v):k==='comp'?S.comp.includes(v):false;
  return neg?!r:r;}
@@ -343,7 +376,7 @@ function begin(rec){
   S.job=rec.job;S.traits=(rec.traits||[]).filter(id=>T[id]);
   S.traits.forEach(id=>{Object.entries(T[id].max||{}).forEach(([k,v])=>S.max[k]=(S.max[k]||0)+v)});
   B.resources.forEach(r=>{if(rec.res&&rec.res[r.id]!=null)S.res[r.id]=Math.min(S.max[r.id]??Infinity,rec.res[r.id])});
-  S.insp=rec.insp||0;S.luck=rec.luck??1;S.items=(rec.items||[]).slice();S.comp=(rec.comp||[]).slice();S.flags={...(rec.flags||{})};S.crits=(rec.crits||[]).slice();S.fortune=rec.fortune||0;
+  S.insp=rec.insp||0;S.luck=rec.luck??1;S.items=(rec.items||[]).slice();S.comp=(rec.comp||[]).slice();S.flags={...(rec.flags||{})};S.crits=(rec.crits||[]).slice();S.fortune=rec.fortune||0;S.forks=(rec.forks||[]).slice();
  }else S.traits.forEach(id=>{const t=T[id];
   Object.entries(t.max||{}).forEach(([k,v])=>S.max[k]=(S.max[k]||0)+v);
   Object.entries(t.start||{}).forEach(([k,v])=>addRes(k,v));});
@@ -351,6 +384,7 @@ function begin(rec){
 }
 function go(to,fx){
  const b={res:{...S.res},insp:S.insp,items:S.items.length,comp:S.comp.slice(),crits:S.crits.length};
+ S.stamp=null;if(S.forkPick){S.forks=(S.forks||[]).concat([S.forkPick]);S.stamp=S.forkPick.took;S.forkPick=null;S.reliveAvoid=null}
  doFx(fx);S.node=to;S.check=null;if(B.nodes[to].when)S.when=B.nodes[to].when;doFx(B.nodes[to].do);
  const d=[];
  B.resources.forEach(r=>{const x=S.res[r.id]-b.res[r.id];if(x)d.push([`${r.name} ${x>0?'+':'−'}${val(r,Math.abs(x))}`,x>0?'up':'down'])});
@@ -362,7 +396,8 @@ function go(to,fx){
  B.resources.forEach(r=>{if(r.low&&S.res[r.id]===r.min&&b.res[r.id]>r.min)d.push([r.low,'down'])});
  S.delta=d;save();render(true);
 }
-function pick(i){const all=choicesOf(B.nodes[S.node]),c=all[i];
+function pick(i){const all=choicesOf(B.nodes[S.node]),c=all[i],pn=B.nodes[S.node];
+ if(pn.fork){const snap=clone(S);snap.check=null;snap.delta=[];snap.stamp=null;snap.forkPick=null;snap.reliveAvoid=null;S.forkPick={name:pn.fork,node:S.node,file:CUR,snap,ti:i,took:c.life||c.label};}
  if(!c.check&&all.some(x=>x.check))addFortune(1); /* 운에 맡길 수 있었는데 다른 길을 골랐다 */
  if(c.special)addFortune(1);
  if(c.check){S.check={i,roll:null};render();document.getElementById('checkpanel')?.scrollIntoView({behavior:'smooth',block:'center'});}
@@ -471,6 +506,7 @@ function fontPref(){try{return localStorage.getItem(FKEY)||'serif'}catch(e){retu
 function toggleFont(){const f=document.documentElement.dataset.body==='serif'?'sans':'serif';document.documentElement.dataset.body=f;try{localStorage.setItem(FKEY,f)}catch(e){};render();}
 function pageView(turn,tail){const n=B.nodes[S.node];
  let h=`<article class="page${turn?' turn':''}">${markSnap?`<div class="ribbon${markSnap.node===S.node?' here':''}" aria-label="${B.nodes[markSnap.node].n}쪽에 책갈피">${B.nodes[markSnap.node].n}<small>쪽</small></div>`:''}<div class="runhead"><span><b>${esc(B.meta.title)}</b> · ${esc(S.when?B.meta.chapter+' · '+S.when:B.meta.chapter)}</span></div><div class="pno"><em>${n.n}</em></div>`;
+ if(S.stamp)h+=`<div class="stamp" role="status"><b>그래, 결심했어!</b><span>${esc(S.stamp)}</span></div>`;
  if(n.img)h+=`<figure class="plate"><img src="${esc(n.img)}" alt="${esc(n.alt||'')}" loading="lazy" decoding="async" onerror="this.parentNode.remove()"></figure>`;
  h+=paras(n).map(p=>`<p>${fmt(p)}</p>`).join('');
  if(n.box)h+=`<div class="jbox"><b>${fmt(n.box.title)}</b><span>${fmt(n.box.text)}</span></div>`;
@@ -480,9 +516,11 @@ function pageView(turn,tail){const n=B.nodes[S.node];
 function choicesView(){
  return `<div class="choices">${choicesOf(B.nodes[S.node]).map((c,i)=>{
   let tag=c.tag?fmt(c.tag).replace('★','<span class="star">★</span>'):'';
+  const was=S.reliveAvoid&&S.reliveAvoid.node===S.node&&S.reliveAvoid.ti===i;
   if(c.check){const{total,why}=mods(c.check.skill,c.check.dc),h=helper(c.check.skill);
    tag=['운에 맡기기 · '+level(c.check.dc,total,h),...why.map(w=>w.t),h&&!h.blocked?h.line:''].filter(Boolean).join(' · ');}
-  return `<button class="ch${c.special?' special':''}" onclick="pick(${i})"><span class="lbl"><b>${fmt(c.label)}</b>${tag?`<i>${tag}</i>`:''}</span><span class="to">${c.check?'<small>주사위</small>':'<small>→</small>'+B.nodes[c.to].n}</span></button>`;}).join('')}</div>`;
+  if(was)tag=['지난 인생에서 고른 길',tag].filter(Boolean).join(' · ');
+  return `<button class="ch${c.special?' special':''}${was?' was':''}" onclick="pick(${i})"><span class="lbl"><b>${fmt(c.label)}</b>${tag?`<i>${tag}</i>`:''}</span><span class="to">${c.check?'<small>주사위</small>':'<small>→</small>'+B.nodes[c.to].n}</span></button>`;}).join('')}</div>`;
 }
 function checkView(){
  const c=choicesOf(B.nodes[S.node])[S.check.i],k=c.check,{total,why}=mods(k.skill,k.dc),h=helper(k.skill),r=S.check.roll;
@@ -564,7 +602,12 @@ function updateScale(){
  else{m.className='msg ok';m.textContent=g===b?(g?'저울이 딱 맞았습니다. 출발할 수 있어요.':'아무것도 고르지 않고 출발해도 됩니다.'):'아쉬운 점이 더 무겁네요. 그래도 출발할 수 있어요.';btn.disabled=false}
 }
 
+function forksView(){const F=S.forks||[];if(!F.length)return '';
+ return `<h3 class="endsec">인생의 갈림길</h3><div class="forks">${F.map((f,i)=>`<div class="fork"><span><b>${esc(f.name)}</b><i>${esc(f.took)}</i></span><button class="big alt" onclick="relive(${i})">다른 길로 살아 보기</button></div>`).join('')}</div>`;}
+function livesView(){const L=lives();if(L.length<2)return '';
+ return `<h3 class="endsec">지금까지 살아 본 인생</h3><ol class="lives">${L.slice(-4).map((l,k,a)=>{const n=L.length-a.length+k;return `<li><b>${ORD[n]||n+1} 번째 인생</b><span>${esc(l.job)} · ${esc(l.chapter)}${l.took.length?' · '+esc(l.took.join(', ')):''}</span><i>${esc(l.end)}</i></li>`}).join('')}</ol>`;}
 function endView(){
+ saveLife();
  const L=S.crits.filter(c=>c.kind==='legend'),D=S.crits.filter(c=>c.kind==='disaster');
  const clues=(B.meta.clues||[]).filter(([f])=>S.flags[f]).map(([,l])=>l);
  const good=S.rolls.filter(o=>o==='ok'||o==='crit').length;
@@ -577,6 +620,7 @@ function endView(){
    ${row('동료',S.comp.join(', ')||'없음')}${row('소지품',S.items.join(', ')||'없음')}
    ${row('전설의 페이지',L.map(c=>c.title).join(', ')||'아직 없음')}${row('대참사 페이지',D.map(c=>c.title).join(', ')||'아직 없음')}
    ${row('찾은 단서',clues.join(', ')||'아직 없음')}${row('운에 맡긴 결과',S.rolls.length?`${S.rolls.length}번 중 ${good}번 잘 됐다`:'없음')}</div>
+  ${forksView()}${livesView()}
   <div class="next">${esc(B.meta.next)}</div></article>
   <div class="btns">${B.meta.next_file?`<button class="big" onclick="nextChapter()">다음 장으로 넘어가기 · 기록을 이어받습니다</button>`:''}
   <button class="big${B.meta.next_file?' alt':''}" onclick="restart()">다른 사람으로 처음부터</button></div>`;
