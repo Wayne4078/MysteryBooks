@@ -219,6 +219,72 @@ html[data-body="serif"] .ch .lbl b,html[data-body="serif"] .tr b{font-weight:700
 .err{color:var(--desk-ink)}
 .btns .big.alt{border-color:var(--desk-ink);color:var(--desk-ink)}
 
+/* ----- 덮인 책 ----- */
+.desk{min-height:calc(100vh - 40px);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:64px;padding:40px 0 28px}
+.book{position:relative;width:min(76vw,300px);aspect-ratio:3/4.25;border:0;padding:0;background:none;cursor:pointer;perspective:1400px;-webkit-tap-highlight-color:transparent}
+.book:focus-visible{outline:3px solid var(--desk-ink);outline-offset:10px}
+.bpages,.binside,.blid,.bfront,.bback{position:absolute;inset:0;border-radius:3px 6px 6px 3px}
+/* 책장 덩어리: 오른쪽·아래로 살짝 보이는 종이 결 */
+.bpages{transform:translate(7px,6px);background:repeating-linear-gradient(90deg,#efe6cf 0 2px,#d9cdb0 2px 3px);box-shadow:0 18px 30px rgba(0,0,0,.55),0 4px 8px rgba(0,0,0,.4)}
+.binside{left:6px;background:var(--paper) var(--grain);display:flex;align-items:center;justify-content:center;box-shadow:inset 14px 0 18px -10px rgba(0,0,0,.35)}
+.binside b{font-family:var(--f-disp);font-weight:800;font-size:22px;color:var(--ink);border-top:2px solid var(--ink);border-bottom:2px solid var(--ink);padding:6px 4px}
+.blid{transform-origin:left center;transform-style:preserve-3d;transition:transform 1s cubic-bezier(.45,.05,.2,1)}
+.bfront,.bback{backface-visibility:hidden;-webkit-backface-visibility:hidden;overflow:hidden}
+/* 천 표지: 결 + 낟알 + 빛 */
+.bfront{background:linear-gradient(105deg,rgba(255,255,255,.08),transparent 40%,rgba(0,0,0,.18)),repeating-linear-gradient(0deg,rgba(255,255,255,.035) 0 1px,transparent 1px 3px),repeating-linear-gradient(90deg,rgba(0,0,0,.05) 0 1px,transparent 1px 3px),var(--cloth);box-shadow:inset 0 0 0 1px rgba(0,0,0,.35),inset -3px 0 6px rgba(0,0,0,.25)}
+.bback{transform:rotateY(180deg);background:repeating-radial-gradient(circle at 30% 40%,#b9a477 0 6px,#a8915f 6px 12px);box-shadow:inset 0 0 0 10px var(--cloth)}
+.bspine{position:absolute;left:0;top:0;bottom:0;width:20px;background:linear-gradient(90deg,rgba(0,0,0,.45),rgba(255,255,255,.08) 60%,rgba(0,0,0,.3));border-right:1px solid rgba(0,0,0,.35)}
+.bframe{position:absolute;inset:18px 16px 18px 34px;border:3px double #CDAE63;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;padding:14px 10px;color:#D9BD74;text-align:center}
+.bframe small{font-size:13px;font-weight:700;letter-spacing:.02em;line-height:1.5;word-break:keep-all;opacity:.95}
+.bframe b{font-family:var(--f-disp);font-weight:800;font-size:clamp(28px,8.5vw,36px);line-height:1.2;word-break:keep-all;text-shadow:0 1px 0 rgba(0,0,0,.55),0 -1px 0 rgba(255,235,180,.15)}
+.bframe i{font-style:normal;font-size:13px;font-weight:700;letter-spacing:.3em}
+.bplate{display:block;width:62%;aspect-ratio:3/4;background:#efe6cf;padding:5px;box-shadow:0 1px 3px rgba(0,0,0,.6)}
+.bplate img{width:100%;height:100%;object-fit:cover;display:block;filter:sepia(.25) contrast(1.05)}
+.bhint{margin:0;color:var(--desk-ink);font-size:18px;font-weight:700;letter-spacing:.05em}
+/* 여는 움직임 */
+.book.open .blid{transform:rotateY(-168deg)}
+.book.open{animation:bookin 1.05s ease-in forwards}
+@keyframes bookin{60%{transform:scale(1.03)}100%{transform:scale(1.08);opacity:.0}}
+/* 낡음: 겉은 아무 말도 없이 */
+.bwear{position:absolute;inset:0;pointer-events:none}
+.btail,.bslip,.bear{position:absolute;display:none;pointer-events:none}
+.book.marked .btail{display:block;left:58%;bottom:-50px;width:18px;height:70px;background:linear-gradient(90deg,#7c2414,#a8331e 50%,#7c2414);clip-path:polygon(0 0,100% 0,100% 100%,50% 82%,0 100%);transform:rotate(3deg);transform-origin:top;z-index:-1}
+/* 한 번: 책배 손때, 닳은 모서리, 오른쪽 가운데 쥐던 자리의 번들거림 */
+.book.w1 .bpages,.book.w2 .bpages,.book.w3 .bpages{background:radial-gradient(ellipse 14px 70px at 100% 55%,rgba(70,55,35,.55),transparent),radial-gradient(ellipse 10px 40px at 100% 80%,rgba(70,55,35,.35),transparent),repeating-linear-gradient(90deg,#e8dcc0 0 2px,#cfc1a1 2px 3px)}
+.book.w1 .bwear,.book.w2 .bwear,.book.w3 .bwear{background:radial-gradient(ellipse 60px 90px at 100% 55%,rgba(255,255,255,.10),transparent),radial-gradient(circle at 100% 0,rgba(235,215,170,.32),transparent 16px),radial-gradient(circle at 100% 100%,rgba(235,215,170,.32),transparent 18px)}
+/* 두 번: 커피 잔 자국, 접힌 귀퉁이 */
+.book.w2 .bwear,.book.w3 .bwear{background:radial-gradient(ellipse 44px 41px at 31% 82%,transparent 86%,rgba(35,18,6,.5) 90%,rgba(35,18,6,.18) 95%,transparent 99%),radial-gradient(ellipse 45px 43px at 29.5% 81%,transparent 90%,rgba(35,18,6,.35) 93%,transparent 97%),radial-gradient(ellipse 40px 38px at 31% 82%,rgba(120,95,60,.12),transparent 85%),radial-gradient(ellipse 60px 90px at 100% 55%,rgba(255,255,255,.10),transparent),radial-gradient(circle at 100% 0,rgba(235,215,170,.32),transparent 16px),radial-gradient(circle at 100% 100%,rgba(235,215,170,.32),transparent 18px)}
+.book.w2 .bear,.book.w3 .bear{display:block;right:-7px;top:22%;width:14px;height:22px;background:linear-gradient(135deg,#f3ead3 50%,#cdbf9f 50%);clip-path:polygon(0 0,100% 30%,100% 100%,0 100%)}
+/* 세 번부터: 끼워 둔 쪽지, 닳은 금박 */
+.book.w3 .bslip{display:block;right:22%;top:-26px;width:58px;height:44px;background:repeating-linear-gradient(0deg,transparent 0 9px,rgba(60,60,80,.28) 9px 10px),#efe3a8;transform:rotate(-7deg);box-shadow:0 1px 2px rgba(0,0,0,.4);z-index:-1}
+.book.w3 .bframe b{-webkit-mask:radial-gradient(circle at 70% 40%,transparent 6px,#000 10px),linear-gradient(#000,#000);-webkit-mask-composite:source-in;mask:radial-gradient(circle at 70% 40%,rgba(0,0,0,.45) 8px,#000 14px)}
+@media (prefers-reduced-motion:reduce){.blid{transition:none}.book.open{animation:none}}
+
+/* 양장본: 세 번부터 끼워 둔 것은 앵무새 깃털 */
+.book.hardcover.w3 .bslip{right:24%;top:-46px;width:16px;height:70px;background:linear-gradient(90deg,#2f6b3a,#4f9a4a 45%,#2a5e33 50%,#5aa65a 55%,#2f6b3a);clip-path:polygon(50% 0,85% 18%,100% 55%,70% 100%,30% 100%,0 55%,15% 18%);transform:rotate(14deg);box-shadow:none}
+/* ----- 핸드북: 비닐 커버 실용서 ----- */
+.book.handbook .bpages{transform:translate(5px,4px);border-radius:4px 10px 10px 4px}
+.book.handbook .bpages,.book.handbook .binside,.book.handbook .blid,.book.handbook .bfront,.book.handbook .bback{border-radius:4px 10px 10px 4px}
+.book.handbook .bfront{background:linear-gradient(118deg,rgba(255,255,255,.38) 0 12%,rgba(255,255,255,0) 26%,rgba(255,255,255,0) 62%,rgba(255,255,255,.18) 70%,rgba(255,255,255,0) 80%),#F2EAD6;box-shadow:inset 0 0 0 1px rgba(0,0,0,.25),inset 3px 0 0 rgba(0,0,0,.12)}
+.book.handbook .bback{background:#F2EAD6;box-shadow:inset 0 0 0 8px var(--cloth)}
+.hband{position:absolute;left:0;right:0;top:0;height:26%;background:var(--cloth);display:flex;align-items:flex-end;justify-content:center;padding:0 12px 10px;border-bottom:6px solid #F2C230}
+.hband small{color:#FFF6E0;font-size:15px;font-weight:800;letter-spacing:.04em;word-break:keep-all;text-align:center}
+.hbody{position:absolute;left:0;right:0;top:26%;bottom:13%;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;padding:20px 16px 12px;text-align:center}
+.hbody b{font-family:"Noto Sans KR","Noto Sans CJK KR","Apple SD Gothic Neo",sans-serif;font-weight:900;font-size:clamp(30px,9vw,38px);line-height:1.15;color:#1B1712;letter-spacing:-.02em;word-break:keep-all}
+.hbody small{font-size:13px;font-weight:700;color:#4A3F30;word-break:keep-all;line-height:1.45}
+.book.handbook .bplate{width:56%;aspect-ratio:4/3;background:#fff;padding:3px;border:2px solid #1B1712;box-shadow:none}
+.book.handbook .bplate img{filter:grayscale(1) contrast(1.1)}
+.hfoot{position:absolute;left:0;right:0;bottom:0;height:13%;background:#1B1712;color:#F2C230;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:800;letter-spacing:.12em}
+/* 핸드북의 책갈피는 영수증 */
+.book.handbook.marked .btail{left:62%;bottom:-34px;width:30px;height:50px;background:repeating-linear-gradient(0deg,#fbfaf4 0 5px,#e7e4d8 5px 6px);clip-path:polygon(0 0,100% 0,100% 92%,88% 100%,75% 92%,62% 100%,50% 92%,38% 100%,25% 92%,12% 100%,0 92%);transform:rotate(-4deg)}
+/* 한 번: 손때, 말려 올라간 모서리 */
+.book.handbook.w1 .bwear,.book.handbook.w2 .bwear,.book.handbook.w3 .bwear{background:radial-gradient(ellipse 50px 80px at 100% 58%,rgba(90,70,40,.18),transparent),linear-gradient(225deg,rgba(0,0,0,.18) 0 10px,transparent 22px),linear-gradient(315deg,rgba(0,0,0,.14) 0 8px,transparent 20px)}
+/* 두 번: 치킨 기름 얼룩 */
+.book.handbook.w2 .bwear,.book.handbook.w3 .bwear{background:radial-gradient(ellipse 26px 20px at 24% 70%,rgba(214,160,60,.38),rgba(214,160,60,.18) 70%,transparent 75%),radial-gradient(circle 9px at 34% 78%,rgba(214,160,60,.32),transparent 80%),radial-gradient(circle 6px at 78% 34%,rgba(214,160,60,.28),transparent 80%),radial-gradient(ellipse 50px 80px at 100% 58%,rgba(90,70,40,.18),transparent),linear-gradient(225deg,rgba(0,0,0,.18) 0 10px,transparent 22px),linear-gradient(315deg,rgba(0,0,0,.14) 0 8px,transparent 20px)}
+/* 세 번부터: 노란 메모지 */
+.book.handbook.w3 .bslip{right:-26px;top:38%;width:40px;height:30px;background:#F5DD5A;transform:rotate(-4deg);box-shadow:0 1px 2px rgba(0,0,0,.35);z-index:-1}
+.book.handbook.w3 .bframe b{mask:none}
+
 /* 책이 지난 인생을 기억한다 — 그 말만 잉크가 스며 나오듯 금빛으로 떠올랐다가 보통 잉크로 가라앉는다. 처음 펼칠 때 한 번만. */
 .mem{animation:mem 3.2s ease-out .5s both}
 .mem.seen{animation:none}
@@ -479,13 +545,13 @@ function proceed(){const k=choicesOf(B.nodes[S.node])[S.check.i].check,r=S.check
 /* ----- 책갈피 ----- */
 function putMark(){if(S.marks<=0||markSnap)return;S.marks--;S.delta=[[`${B.nodes[S.node].n}쪽에 책갈피를 꽂았다`,'gold']];markSnap=clone(S);save();render();}
 function backToMark(){if(!markSnap)return;S=clone(markSnap);markSnap=null;S.delta=[[`책갈피 꽂은 ${B.nodes[S.node].n}쪽으로 돌아왔다`,'gold']];save();render(true);}
-function restart(){clearSave();clearRecord();S=fresh();markSnap=null;
+function restart(){clearSave();clearRecord();S=fresh();markSnap=null;opened=false;
  if(B.meta.first_file&&B.meta.first_file!==CUR){app.innerHTML='<p class="err">책을 펴는 중…</p>';load(B.meta.first_file,{});}else render(true);}
 function resume(){const d=loadSave();if(d){S=d.S;markSnap=d.markSnap;render(true)}}
 
 /* ----- 화면 ----- */
 function render(turn){
- if(S.screen==='cover')app.innerHTML=coverView();
+ if(S.screen==='cover')app.innerHTML=opened?coverView():bookView();
  else if(S.screen==='traits'){app.innerHTML=traitsView();updateScale(true)}
  else if(B.nodes[S.node].end)app.innerHTML=statusBar()+endView();
  else app.innerHTML=statusBar()+toolbar()+pageView(turn,S.check?checkView():markTip()+choicesView());
@@ -559,6 +625,26 @@ function checkView(){
  }
  return x+'</section>';
 }
+/* ----- 책 한 권 (앱을 열면 먼저 보이는 덮인 책) -----
+   이 기기에서 살아 본 인생만큼 낡는다: 읽다 만 책·한 번 산 책은 책갈피 끈이 삐져나오고 책배에 손때,
+   두 번이면 커피 잔 자국과 접힌 귀퉁이, 세 번부터는 끼워 둔 쪽지와 닳은 금박. 누르면 표지가 열린다. */
+let opened=false;
+/* 책 꼴(meta.binding): hardcover = 세계 문고 양장본, handbook = 비닐 커버 실용 길잡이. 낡는 자국도 책마다 다르다. */
+function bookView(){const L=lives().length,m=B.meta,d=loadSave(),bind=m.binding||'hardcover';
+ const wear=Math.min(L,3),plate=m.cover_img?`<span class="bplate"><img src="${esc(m.cover_img)}" alt="" onerror="this.parentNode.remove()"></span>`:'';
+ const front=bind==='handbook'
+  ?`<span class="hband"><small>${esc(m.cover_tag||'')}</small></span><span class="hbody"><b>${esc(m.title)}</b>${plate}</span><span class="hfoot">미스터리 북스 · 실용 문고</span>`
+  :`<span class="bspine"></span><span class="bframe"><small>${esc(m.kicker||'')}</small><b>${esc(m.title)}</b>${plate}<i>미스터리 북스</i></span>`;
+ return `<div class="desk"><button class="book ${bind} w${wear}${(d||L)?' marked':''}" style="--cloth:${esc(m.cloth||'#3A2E22')}" onclick="openBook(this)" aria-label="${esc(m.title)}, 책을 펼칩니다">
+  <span class="bpages"></span><span class="binside"><b>${esc(m.title)}</b></span>
+  <span class="blid"><span class="bfront">${front}<span class="bwear"></span></span><span class="bback"></span></span>
+  <span class="btail"></span><span class="bslip"></span><span class="bear"></span>
+ </button><p class="bhint">${L?'다시 펼친다':'책을 펼친다'}</p></div>`;}
+function openBook(el){if(el.classList.contains('open'))return;
+ const go=()=>{opened=true;render(true)};
+ if(matchMedia('(prefers-reduced-motion: reduce)').matches)return go();
+ el.classList.add('open');setTimeout(go,1050);}
+
 function coverView(){
  const d=loadSave(),m=B.meta,rec=loadRecord();
  /* 지난 장 기록이 이 장으로 이어지는 것이면 "이어서 읽기"를 맨 위에 */

@@ -36,6 +36,10 @@ if (B.meta.prev_file) {
     if (prev.meta.next_file !== file.replace(/^.*?(stories\/)/, '$1')) W('meta', `앞 장의 next_file(${prev.meta.next_file})이 이 파일을 가리키지 않음`);
   }
 }
+// 표지: 책 꼴, 표지 그림, 표지 문구
+if (B.meta.binding && !['hardcover', 'handbook'].includes(B.meta.binding)) E('meta', `binding 은 hardcover 또는 handbook: ${B.meta.binding}`);
+if (B.meta.cover_img && !existsSync(join(here, '..', 'art', SERIES, B.meta.cover_img.slice(4)))) E('meta', `표지 그림이 없음: art/${SERIES}/${B.meta.cover_img.slice(4)}`);
+if (B.meta.cloth && !/^#[0-9a-fA-F]{6}$/.test(B.meta.cloth)) E('meta', `cloth 는 #RRGGBB: ${B.meta.cloth}`);
 if (B.meta.next_file && !/^stories\/[\w-]+\.json$/.test(B.meta.next_file)) E('meta', `next_file 경로 꼴 이상함 ${B.meta.next_file}`);
 if (B.meta.next_file && !B.meta.first_file && !B.meta.prev_file) W('meta', '다음 장이 있는 첫 장에는 first_file(자기 경로)을 적어 두면 「처음부터」가 안전함');
 
@@ -69,7 +73,7 @@ const checkDo = (id, d) => {
 
 // 메타와 특징의 화면 글
 B.resources.forEach(r => ['name', 'low', 'unit'].forEach(k => say('res:' + r.id, r[k])));
-['title', 'kicker', 'sub', 'next', 'jobQ', 'chapter'].forEach(k => say('meta', B.meta[k]));
+['title', 'kicker', 'sub', 'next', 'jobQ', 'chapter', 'cover_tag'].forEach(k => say('meta', B.meta[k]));
 (B.meta.how || []).flat().forEach(s => say('meta', s));
 B.jobs.forEach(j => ['name', 'desc', 'edge', 'win'].forEach(k => say('job:' + j.id, j[k])));
 [...B.traits.good, ...B.traits.bad].forEach(t => {
