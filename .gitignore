@@ -1,0 +1,5 @@
+# 찍어낼 때 생기는 중간 파일
+stories/
+shots/
+art/_src/
+node_modules/

@@ -1,0 +1,604 @@
+<meta charset="utf-8">
+<title>표류 일기</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@500;700;800&family=Nanum+Myeongjo:wght@800&family=Noto+Serif+KR:wght@600;700&display=swap">
+<style>
+/* Layout: one narrow gamebook page on a sea-mist ground; status strip on top, page card, choices as tall tappable rows. Engine reads stories/*.json. */
+:root{
+  --bg:#E4EBEC; --paper:#F8F9F5; --ink:#17242C; --ink2:#34444E; --line:#C3CFD2;
+  --accent:#0E6469; --accent-ink:#FFFFFF; --sun:#E3A21A; --sun-ink:#2A1C00;
+  --good:#22702A; --bad:#A52A1F; --box:#13233A; --box-ink:#F4F6FA;
+  --f-body:"Noto Sans KR","Noto Sans CJK KR","Apple SD Gothic Neo","Malgun Gothic",sans-serif;
+  --f-disp:"Nanum Myeongjo","Noto Serif CJK KR","AppleMyungjo","Batang",serif;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#0B151C; --paper:#13222B; --ink:#EDF2F2; --ink2:#C6D2D4; --line:#2C404B;
+  --accent:#5BC3C0; --accent-ink:#06282A; --sun:#F2BA3E; --sun-ink:#2A1C00;
+  --good:#86D18B; --bad:#FF8E84; --box:#0A1424; --box-ink:#F4F6FA; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#0B151C; --paper:#13222B; --ink:#EDF2F2; --ink2:#C6D2D4; --line:#2C404B;
+  --accent:#5BC3C0; --accent-ink:#06282A; --sun:#F2BA3E; --sun-ink:#2A1C00;
+  --good:#86D18B; --bad:#FF8E84; --box:#0A1424; --box-ink:#F4F6FA; color-scheme:dark}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font-family:var(--f-body);font-weight:500;font-size:18px;line-height:1.75;word-break:keep-all;overflow-wrap:break-word}
+.wrap{max-width:560px;margin:0 auto;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:12px 40px;display:flex;flex-direction:column;gap:14px}
+button{font-family:inherit;color:inherit;cursor:pointer}
+button:focus-visible{outline:3px solid var(--sun);outline-offset:2px}
+
+.status{display:flex;flex-wrap:wrap;gap:8px 14px;align-items:center;padding:10px 14px;background:var(--paper);border:1.5px solid var(--line);border-radius:12px}
+.st{display:flex;align-items:center;gap:5px;font-weight:700;font-size:16px;white-space:nowrap;font-variant-numeric:tabular-nums}
+.st svg{width:20px;height:20px;flex:none}
+.st small{font-size:14px;font-weight:700;color:var(--ink2)}
+.day{margin-left:auto;font-weight:800;font-size:16px;color:var(--accent);white-space:nowrap}
+
+.toolbar{display:flex;gap:8px;flex-wrap:wrap}
+.tbtn{min-height:48px;padding:0 16px;border-radius:24px;border:1.5px solid var(--line);background:var(--paper);font-weight:700;font-size:16px;display:flex;align-items:center;gap:6px;white-space:nowrap}
+.tbtn svg{width:18px;height:18px}
+.tbtn[disabled]{opacity:.45;cursor:default}
+.tbtn.on{border-color:var(--accent);color:var(--accent)}
+
+.page{background:var(--paper);border:1.5px solid var(--line);border-radius:6px 14px 14px 6px;padding:22px 20px 24px;box-shadow:inset 10px 0 14px -12px rgba(0,0,0,.25)}
+.page.turn{animation:turn .45s ease-out}
+@keyframes turn{from{opacity:0;transform:translateX(18px)}to{opacity:1;transform:none}}
+.pno{font-family:var(--f-disp);font-weight:800;font-size:40px;line-height:1;color:var(--accent);margin:0 0 14px}
+.pno span{font-size:20px;margin-right:4px}
+.page p{margin:0 0 14px}
+/* 삽화: 옛 게임책의 펜화 한 장. 흑백 그림이라 어두운 화면에선 살짝 가라앉힌다 */
+.plate{margin:0 0 18px;border:1.5px solid var(--line);border-radius:4px;overflow:hidden;background:#F8F9F5}
+.plate img{display:block;width:100%;height:auto;aspect-ratio:3/4;object-fit:cover}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]) .plate img{filter:brightness(.88)}}
+:root[data-theme="dark"] .plate img{filter:brightness(.88)}
+.page p:last-of-type{margin-bottom:0}
+.q{font-weight:700}
+.delta{display:flex;flex-wrap:wrap;gap:8px;margin-top:16px}
+.chip{font-size:15px;font-weight:700;padding:4px 12px;border-radius:14px;border:1.5px solid currentColor;white-space:nowrap}
+.chip.up{color:var(--good)} .chip.down{color:var(--bad)} .chip.gold{color:var(--sun);background:var(--box)}
+
+.jbox{margin-top:18px;background:var(--box);color:var(--box-ink);border:4px double var(--box-ink);border-radius:4px;padding:14px 16px 18px;position:relative}
+.jbox b{display:block;font-size:20px;font-weight:800}
+.jbox span{display:block;font-size:16px;margin-top:4px}
+.jbox::after{content:"▼";position:absolute;right:12px;bottom:4px;font-size:14px;animation:blink 1s steps(2) infinite}
+@keyframes blink{50%{opacity:0}}
+
+.choices{display:flex;flex-direction:column;gap:10px}
+.ch{width:100%;text-align:left;min-height:64px;padding:12px 14px 12px 16px;border-radius:12px;border:2px solid var(--line);background:var(--paper);display:flex;align-items:center;gap:12px}
+.ch:hover{border-color:var(--accent)}
+.ch .lbl{flex:1;min-width:0}
+.ch .lbl b{display:block;font-size:19px;font-weight:700;line-height:1.5}
+.ch .lbl i{display:block;font-style:normal;font-size:15px;font-weight:700;color:var(--ink2);margin-top:2px}
+.ch .to{font-family:var(--f-disp);font-weight:800;font-size:22px;color:var(--accent);white-space:nowrap}
+.ch.special{border-color:var(--sun)}
+.star{color:var(--sun)}
+
+.check{background:var(--paper);border:2px solid var(--accent);border-radius:14px;padding:18px;display:flex;flex-direction:column;align-items:center;gap:14px;text-align:center}
+.check h3{margin:0;font-size:20px;font-weight:800;line-height:1.5}
+.dcrow{display:flex;gap:8px;flex-wrap:wrap;justify-content:center}
+.pill{font-size:16px;font-weight:700;padding:6px 14px;border-radius:18px;background:var(--bg);white-space:nowrap}
+.pill.lv{background:var(--accent);color:var(--accent-ink);font-size:18px}
+.pill.good{color:var(--good)} .pill.bad{color:var(--bad)}
+.dice{display:flex;gap:18px;justify-content:center;min-height:118px;align-items:center}
+.die{width:108px;height:118px;clip-path:polygon(50% 0,100% 25%,100% 75%,50% 100%,0 75%,0 25%);background:var(--sun);color:var(--sun-ink);display:grid;place-items:center;font-size:46px;font-weight:800;font-variant-numeric:tabular-nums}
+.die.idle{opacity:.55} .die.dim{opacity:.3}
+.die.rolling{animation:wob .18s linear infinite}
+@keyframes wob{0%{transform:rotate(-8deg)}50%{transform:rotate(8deg)}100%{transform:rotate(-8deg)}}
+.why{font-size:18px;font-weight:700}
+.verdict{font-size:26px;font-weight:800;line-height:1.4}
+.verdict.crit{color:var(--sun)} .verdict.ok{color:var(--good)} .verdict.fail,.verdict.fumble{color:var(--bad)}
+.btns{display:flex;flex-direction:column;gap:10px;width:100%}
+.big{min-height:56px;border-radius:14px;border:none;font-size:19px;font-weight:800;background:var(--accent);color:var(--accent-ink);padding:0 18px}
+.big.alt{background:transparent;border:2px solid var(--accent);color:var(--accent)}
+.big.gold{background:var(--sun);color:var(--sun-ink)}
+.big[disabled]{opacity:.4;cursor:default}
+.note{font-size:15px;font-weight:700;color:var(--ink2);margin:0}
+
+.cover{text-align:center;padding:30px 20px}
+.cover h1{font-family:var(--f-disp);font-weight:800;font-size:48px;line-height:1.2;margin:6px 0 8px}
+.cover .sub{font-size:17px;font-weight:700;color:var(--ink2);margin:0}
+.how{text-align:left;margin:22px 0 0;padding:16px 4px 0;border-top:1.5px solid var(--line);display:flex;flex-direction:column;gap:10px;font-size:17px}
+.how div{display:flex;flex-direction:column}
+.how b{color:var(--accent)}
+.sec{font-size:20px;font-weight:800;margin:4px 0 0;line-height:1.5}
+
+/* 저울 */
+.scale{background:var(--paper);border:1.5px solid var(--line);border-radius:14px;padding:12px 12px 16px;text-align:center}
+.scale svg{width:100%;max-width:340px;height:auto;display:block;margin:0 auto}
+.beam,.pan{transition:transform .6s cubic-bezier(.3,1.4,.5,1)}
+.scale .msg{font-size:18px;font-weight:700;margin:6px 0 0}
+.scale .msg.ok{color:var(--good)} .scale .msg.no{color:var(--bad)}
+.tlist{display:grid;gap:10px}
+.tr{width:100%;text-align:left;min-height:64px;padding:12px 14px;border-radius:12px;border:2px solid var(--line);background:var(--paper);display:flex;gap:12px;align-items:center}
+.tr .lbl{flex:1;min-width:0}
+.tr b{display:block;font-size:19px;font-weight:700;line-height:1.45}
+.tr i{display:block;font-style:normal;font-size:15px;font-weight:700;color:var(--ink2)}
+.tr .w{font-size:18px;letter-spacing:2px;white-space:nowrap}
+.tr.good .w{color:var(--good)} .tr.bad .w{color:var(--bad)}
+.tr[aria-pressed="true"].good{border-color:var(--good);background:color-mix(in srgb,var(--good) 12%,var(--paper))}
+.tr[aria-pressed="true"].bad{border-color:var(--bad);background:color-mix(in srgb,var(--bad) 10%,var(--paper))}
+.tick{width:28px;height:28px;border-radius:50%;border:2px solid var(--line);display:grid;place-items:center;font-weight:800;flex:none}
+.tr[aria-pressed="true"] .tick{border-color:currentColor}
+.tr.good[aria-pressed="true"] .tick{color:var(--good)} .tr.bad[aria-pressed="true"] .tick{color:var(--bad)}
+.sticky{position:sticky;bottom:0;padding-block:10px calc(10px + env(safe-area-inset-bottom,0px));background:var(--bg)}
+
+.end h2{font-family:var(--f-disp);font-weight:800;font-size:38px;margin:0 0 12px;color:var(--accent);line-height:1.2}
+.rows{display:flex;flex-direction:column;border-top:1.5px solid var(--line);margin-top:8px}
+.row{display:flex;justify-content:space-between;gap:12px;padding:10px 0;border-bottom:1.5px solid var(--line);font-size:17px}
+.row span:first-child{font-weight:700;color:var(--ink2);white-space:nowrap}
+.row span:last-child{font-weight:700;text-align:right;min-width:0}
+.next{margin-top:16px;padding:14px 16px;border-radius:10px;background:var(--box);color:var(--box-ink);font-weight:700}
+.err{padding:20px;font-weight:700}
+@media (prefers-reduced-motion:reduce){.page.turn,.die.rolling,.jbox::after{animation:none}.beam,.pan{transition:none}}
+
+/* ===== 책 꼴: 80년대 게임책을 손에 든 느낌 =====
+   어두운 책상 위에 누렇게 바랜 종이 한 장. 쪽 번호는 가운데 상자, 선택지는 본문 끝에 인쇄된 줄(오른쪽 끝에 쪽 번호).
+   본문 글씨는 기본 고딕(가독성 기준), html[data-body="serif"] 이면 굵은 명조. */
+:root{
+  --bg:#2B2621; --paper:#F3EAD3; --paper2:#E3D6B8; --ink:#1F1A13; --ink2:#463C2E; --line:#B5A585;
+  --accent:#8C2F1C; --accent-ink:#FFF8EC; --sun:#C98B2A; --sun-ink:#1F1A13;
+  --good:#2F5E1F; --bad:#9A2A1A; --box:#1F1A13; --box-ink:#F3EAD3; --desk-ink:#EFE4CC;
+  --grain:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='160' height='160'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 .35 0 0 0 0 .27 0 0 0 0 .15 0 0 0 .09 0'/></filter><rect width='100%' height='100%' filter='url(%23n)'/></svg>");
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#0E0C0A; --paper:#241F18; --paper2:#1A1611; --ink:#EFE4CC; --ink2:#D3C5A7; --line:#54493A;
+  --accent:#E8907A; --accent-ink:#1A0E09; --sun:#E0A64A; --sun-ink:#1A1206;
+  --good:#A3CF8C; --bad:#F2A08C; --box:#0E0C0A; --box-ink:#EFE4CC; --desk-ink:#EFE4CC; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#0E0C0A; --paper:#241F18; --paper2:#1A1611; --ink:#EFE4CC; --ink2:#D3C5A7; --line:#54493A;
+  --accent:#E8907A; --accent-ink:#1A0E09; --sun:#E0A64A; --sun-ink:#1A1206;
+  --good:#A3CF8C; --bad:#F2A08C; --box:#0E0C0A; --box-ink:#EFE4CC; --desk-ink:#EFE4CC; color-scheme:dark}
+html[data-body="serif"]{--f-body:"Noto Serif KR","Noto Serif CJK KR","AppleMyungjo","Batang",serif}
+html[data-body="serif"] body{font-weight:600}
+html[data-body="serif"] .ch .lbl b,html[data-body="serif"] .tr b{font-weight:700}
+
+/* 종이 */
+.page,.status,.tbtn,.scale,.tr,.wrap>.choices{background-color:var(--paper);background-image:var(--grain)}
+.page{border:none;border-radius:2px;padding:18px 20px 22px;
+  box-shadow:0 1px 0 var(--paper2),0 3px 0 -1px var(--paper2),0 5px 0 -2px var(--line),0 10px 24px rgba(0,0,0,.35),inset 14px 0 18px -16px rgba(0,0,0,.35)}
+.page p{text-indent:1em}
+.page.cover p,.page.end p,.jbox *,.check *{text-indent:0}
+
+/* 머리말과 쪽 번호 */
+.runhead{display:flex;justify-content:space-between;gap:12px;font-size:14px;font-weight:700;color:var(--ink2);padding-bottom:6px;border-bottom:3px double var(--line);margin-bottom:16px;white-space:nowrap}
+.runhead b{font-family:var(--f-disp);font-weight:800;font-size:15px;color:var(--ink)}
+.pno{display:flex;justify-content:center;margin:0 0 16px;color:var(--ink)}
+.pno em{font-style:normal;font-family:var(--f-disp);font-weight:800;font-size:34px;line-height:1;border:2.5px solid var(--ink);padding:8px 18px 6px;min-width:76px;text-align:center}
+.pno span{display:none}
+
+/* 삽화: 종이에 인쇄된 것처럼 흰 바탕이 종이색으로 */
+.plate{border:1.5px solid var(--ink);border-radius:0;background:transparent;padding:0;margin:0 0 18px}
+.plate img{mix-blend-mode:multiply}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]) .plate img{mix-blend-mode:normal}}
+:root[data-theme="dark"] .plate img{mix-blend-mode:normal}
+
+/* 선택지: 본문 끝에 인쇄된 줄 */
+.page .choices{gap:0;margin-top:20px;border-top:1.5px solid var(--ink)}
+.page .choices::before{content:"어떻게 하겠습니까?";display:block;font-size:15px;font-weight:700;color:var(--ink2);padding:10px 0 2px}
+.ch{border:none;border-bottom:1.5px dotted var(--line);border-radius:0;background:transparent;min-height:60px;padding:12px 2px 12px 0}
+.ch:hover{border-color:var(--line);background:color-mix(in srgb,var(--accent) 6%,transparent)}
+.ch:active{background:color-mix(in srgb,var(--accent) 12%,transparent)}
+.ch .to{font-size:26px;color:var(--accent);min-width:52px;text-align:right}
+.ch .to small{font-size:15px;font-weight:700;font-family:var(--f-body);margin-right:2px}
+.ch.special{border-color:var(--line)}
+.ch.special .lbl b::before{content:"★ ";color:var(--accent)}
+.star{color:var(--accent)}
+.wrap>.choices{padding:0 18px;border-radius:2px;box-shadow:0 10px 24px rgba(0,0,0,.35)}
+.wrap>.choices .ch:last-child{border-bottom:none}
+
+/* 운에 맡기기: 인쇄된 이중 테 상자 */
+.page .check{margin-top:20px;background:transparent;border:4px double var(--ink);border-radius:0}
+.pill{border-radius:2px;background:transparent;border:1.5px solid var(--line)}
+.pill.lv{background:var(--ink);color:var(--paper);border-color:var(--ink)}
+.die{background:var(--sun);color:var(--sun-ink)}
+.big{border-radius:4px;background:var(--ink);color:var(--paper)}
+.big.alt{background:transparent;border:2px solid var(--ink);color:var(--ink)}
+.big.gold{background:var(--sun);color:var(--sun-ink)}
+.big small{display:block;font-size:15px;font-weight:700;margin-top:2px}
+.big:has(small){padding-block:8px}
+
+/* 책상 위에 놓인 것들 */
+.status{border:none;border-radius:2px;box-shadow:0 4px 12px rgba(0,0,0,.3)}
+.day{display:none}
+.tbtn{border:none;border-radius:2px;box-shadow:0 3px 10px rgba(0,0,0,.3)}
+.tbtn.on{color:var(--accent);box-shadow:inset 0 0 0 2px var(--accent),0 3px 10px rgba(0,0,0,.3)}
+.sec{color:var(--desk-ink)}
+.chip{border-radius:2px}
+.jbox{border-radius:0}
+.next{border-radius:2px}
+
+/* 표지 */
+.cover h1{border-top:3px double var(--ink);border-bottom:3px double var(--ink);padding:10px 0 8px;margin:10px 0 12px}
+.cover .how{border-top:1.5px solid var(--ink)}
+.cover .how b{color:var(--accent)}
+
+/* 저울과 특징 */
+.scale,.tr{border:none;border-radius:2px;box-shadow:0 3px 10px rgba(0,0,0,.3)}
+.tr[aria-pressed="true"].good{box-shadow:inset 0 0 0 2.5px var(--good),0 3px 10px rgba(0,0,0,.3);background-color:color-mix(in srgb,var(--good) 10%,var(--paper))}
+.tr[aria-pressed="true"].bad{box-shadow:inset 0 0 0 2.5px var(--bad),0 3px 10px rgba(0,0,0,.3);background-color:color-mix(in srgb,var(--bad) 9%,var(--paper))}
+.end h2{color:var(--ink);border-bottom:3px double var(--ink);padding-bottom:8px}
+.row{border-bottom-style:dotted}
+.err{color:var(--desk-ink)}
+
+/* 책갈피 */
+.toolbar{gap:8px;align-items:stretch;flex-wrap:nowrap}
+.tbtn.mark{flex:1;min-width:0;min-height:48px;padding:0 14px;gap:8px}
+.tbtn.mark b{font-size:17px;font-weight:800}
+.tbtn.mark small{margin-left:auto;font-size:14px;font-weight:700;color:var(--ink2)}
+.tbtn.mark svg{width:20px;height:20px;color:var(--accent);flex:none}
+.tbtn.mark.on{background:var(--accent);color:var(--accent-ink);box-shadow:0 3px 10px rgba(0,0,0,.3)}
+.tbtn.mark.on svg{color:var(--accent-ink)}
+.tbtn.font{flex:none;width:52px;min-height:48px;justify-content:center;padding:0}
+.tbtn.font .gg{display:flex;align-items:baseline;gap:2px;font-style:normal;font-family:var(--f-disp);font-weight:800;color:var(--ink);line-height:1}
+.tbtn.font .gg span:first-child{font-size:13px}
+.tbtn.font .gg span:last-child{font-size:19px}
+.page{position:relative}
+.ribbon{position:absolute;top:-8px;right:20px;width:34px;height:64px;background:var(--accent);color:var(--accent-ink);
+  clip-path:polygon(0 0,100% 0,100% 100%,50% 84%,0 100%);display:flex;flex-direction:column;align-items:center;padding-top:14px;
+  font-family:var(--f-disp);font-weight:800;font-size:18px;line-height:1.1;z-index:1}
+.ribbon small{font-family:var(--f-body);font-size:14px;font-weight:700}
+.ribbon.here{height:96px}
+.runhead{padding-right:56px}
+.tip{margin-top:18px;border:2px dashed var(--accent);background:color-mix(in srgb,var(--accent) 7%,transparent);padding:14px 14px 16px}
+.tip b{display:flex;align-items:center;gap:6px;font-size:19px;font-weight:800;color:var(--accent)}
+.tip b svg{width:22px;height:22px}
+.tip span{display:block;font-size:17px;margin:4px 0 12px;text-indent:0}
+.tip .btns{flex-direction:row}.tip .big{flex:1;min-height:52px;font-size:17px}
+</style>
+
+<div class="wrap" id="app"><p class="err">책을 펴는 중…</p></div>
+
+<script>
+/* ===== 게임책 엔진 1호 =====
+   이야기는 stories/*.json 에 있고, 이 파일은 어떤 책이든 같은 방식으로 읽는다.
+   형식은 src/drift_story.py 맨 위 설명, 점검은 tools/lint.mjs, 시험은 tools/sim.mjs, 찍어내기는 tools/build.sh. */
+const STORY='stories/drift.json';
+const ICON={
+ heart:'<svg viewBox="0 0 24 24" aria-hidden="true"><path fill="var(--bad)" d="M12 21s-7.5-4.6-9.5-9.4C1 7.9 3.4 4 7.2 4c2 0 3.6 1.1 4.8 2.7C13.2 5.1 14.8 4 16.8 4 20.6 4 23 7.9 21.5 11.6 19.5 16.4 12 21 12 21z"/></svg>',
+ drop:'<svg viewBox="0 0 24 24" aria-hidden="true"><path fill="var(--accent)" d="M12 2s7 7.6 7 12.5A7 7 0 0 1 5 14.5C5 9.6 12 2 12 2z"/></svg>',
+ coin:'<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9" fill="var(--sun)"/><circle cx="12" cy="12" r="5.5" fill="none" stroke="var(--sun-ink)" stroke-width="1.6"/></svg>',
+ insp:'<svg viewBox="0 0 24 24" aria-hidden="true"><path fill="var(--sun)" d="M12 2l2.9 6.6 7.1.6-5.4 4.7 1.6 7L12 17.2 5.8 20.9l1.6-7L2 9.2l7.1-.6z"/></svg>',
+ luck:'<svg viewBox="0 0 24 24" aria-hidden="true"><path fill="var(--ink)" d="M12 1l10 6v10l-10 6L2 17V7z"/><text x="12" y="16" text-anchor="middle" font-size="9" font-weight="800" fill="var(--paper)" font-family="sans-serif">20</text></svg>',
+ mark:'<svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M6 2h12v20l-6-5-6 5z"/></svg>',
+ food:'<svg viewBox="0 0 24 24" aria-hidden="true"><path fill="var(--good)" d="M12 6c-1.2-1.6-2.6-2.4-4.5-2.4C4.6 3.6 2.5 6 2.5 9.6c0 4.6 3.4 10.4 6.2 10.4 1 0 1.6-.5 3.3-.5s2.3.5 3.3.5c2.8 0 6.2-5.8 6.2-10.4 0-3.6-2.1-6-5-6-1.9 0-3.3.8-4.5 2.4z"/><path fill="var(--good)" d="M12.4 5.2c.2-1.8 1.2-3 3-3.4-.1 1.9-1.1 3.1-3 3.4z"/></svg>'
+};
+let B=null,S=null,T={},markSnap=null,rolling=false;
+const app=document.getElementById('app');
+const clone=o=>JSON.parse(JSON.stringify(o));
+const esc=s=>String(s).replace(/[&<>]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]));
+const job=()=>B.jobs.find(j=>j.id===S.job);
+const fmt=s=>esc(s).replace(/\{job\}/g,job()?job().short:'').replace(/\*\*(.+?)\*\*/g,'<span class="q">$1</span>');
+const resDef=id=>B.resources.find(r=>r.id===id);
+const val=(r,v)=>r.unit?`${v.toLocaleString('ko-KR')}${r.unit}`:String(v);
+
+/* ----- 저장: 이 브라우저에만, 실패해도 게임은 계속 ----- */
+const KEY=()=>'gamebook:'+B.meta.id;
+function save(){try{localStorage.setItem(KEY(),JSON.stringify({S,markSnap}))}catch(e){}}
+function loadSave(){try{const d=JSON.parse(localStorage.getItem(KEY())||'null');return d&&d.S&&d.S.node?d:null}catch(e){return null}}
+function clearSave(){try{localStorage.removeItem(KEY())}catch(e){}}
+
+/* ----- 장과 장 사이 기록 이어받기 -----
+   한 권(series)은 한 페이지 안에서 장 파일만 바뀐다. 장을 끝내면 기록을 남기고, 다음 장은 그 기록으로 시작한다.
+   이어받는 것: 직업, 좋은 점·아쉬운 점, 자원과 최대치, 기운, 행운의 주사위, 소지품, 동료, 깃발, 전설·대참사 페이지.
+   새로 받는 것: 책갈피 2번, 주사위 기록. 새 장에만 있는 자원은 그 장의 시작값으로. */
+const SERIES=()=>B.meta.series||B.meta.id.replace(/-\d+$/,'');
+const RKEY=()=>'gamebook-record:'+SERIES(), CKEY=()=>'gamebook-current:'+SERIES();
+function saveRecord(){try{const{job,traits,res,max,insp,luck,items,comp,flags,crits,fortune}=S;
+ localStorage.setItem(RKEY(),JSON.stringify({from:B.meta.id,chapter:B.meta.chapter,job,traits,res,max,insp,luck,items,comp,flags,crits,fortune}))}catch(e){}}
+function loadRecord(){try{const r=JSON.parse(localStorage.getItem(RKEY())||'null');return r&&r.job?r:null}catch(e){return null}}
+function clearRecord(){try{localStorage.removeItem(RKEY());localStorage.removeItem(CKEY())}catch(e){}}
+function nextChapter(){
+ const f=B.meta.next_file;if(!f)return;
+ saveRecord();clearSave();
+ try{localStorage.setItem(CKEY(),f)}catch(e){}
+ app.innerHTML='<p class="err">다음 장을 펴는 중…</p>';CUR=f;
+ fetch(f).then(r=>{if(!r.ok)throw 0;return r.json()}).then(b=>{B=b;T={};B.traits.good.forEach(t=>T[t.id]={...t,side:'good'});B.traits.bad.forEach(t=>T[t.id]={...t,side:'bad'});
+   S=fresh();markSnap=null;begin(loadRecord())})
+  .catch(()=>{app.innerHTML='<p class="err">다음 장을 불러오지 못했습니다. 잠시 후 다시 열어 주세요.</p>'});
+}
+
+function fresh(){return{screen:'cover',job:null,traits:[],res:{},max:{},insp:0,luck:1,marks:2,items:[],comp:[],flags:{},crits:[],node:null,check:null,rolls:[],delta:[],when:null,fortune:1,streak:0};}
+
+/* ----- 복: 화면에 절대 안 보이는 운. 복은 쌓이고, 주사위는 복을 쓴다 -----
+   쌓이는 곳: 운에 맡기지 않고 다른 길을 고를 때, ★ 직업다운 행동, 작가가 do.luck 으로 표시한 선택, 대참사를 겪은 뒤(액땜).
+   처음엔 1 (살아온 만큼은 있다). 쓰이는 곳: 운에 맡길 때마다 1, 행운의 주사위를 쓰면 전부.
+   효과는 작가가 check.big 으로 표시한 결정적 순간에만: 복 2 이상이면 실패했을 때 한 번 더 굴리고(복 −2), 복 1이면 대참사만 막는다(복 −1).
+   액땜: 결정적 순간이 아닌 곳에서 두 번 연속 안 되면 세 번째는 몰래 +3. 결정적 순간엔 복만 통한다. */
+const FMAX=6;
+function addFortune(v){S.fortune=Math.max(0,Math.min(FMAX,(S.fortune||0)+v))}
+
+/* ----- 조건과 효과 ----- */
+function atom(a){const neg=a[0]==='!';if(neg)a=a.slice(1);const[k,v]=a.split(':');
+ if(k==='res'){const m=v.match(/^(\w+)(>=|<=|>|<|=)(-?\d+)$/);if(!m)return false;const x=S.res[m[1]]??0,n=+m[3];const r=m[2]==='>='?x>=n:m[2]==='<='?x<=n:m[2]==='>'?x>n:m[2]==='<'?x<n:x===n;return neg?!r:r}
+ const r=k==='flag'?!!S.flags[v]:k==='has'?S.items.includes(v):k==='job'?S.job===v:k==='trait'?S.traits.includes(v):k==='comp'?S.comp.includes(v):false;
+ return neg?!r:r;}
+function cond(c){if(!c)return true;if(Array.isArray(c))return c.every(cond);return c.split('|').some(atom);}
+function addRes(k,v){
+ if(k==='insp'){S.insp=Math.max(0,S.insp+v);return}
+ const d=resDef(k);if(!d)return;
+ S.res[k]=Math.min(S.max[k]??Infinity,Math.max(d.min??0,(S.res[k]||0)+v));
+}
+function doFx(d){if(!d)return;
+ Object.entries(d.add||{}).forEach(([k,v])=>addRes(k,v));
+ (d.give||[]).forEach(x=>S.items.includes(x)||S.items.push(x));
+ (d.flag||[]).forEach(x=>S.flags[x]=1);
+ (d.comp||[]).forEach(x=>S.comp.includes(x)||S.comp.push(x));
+ if(d.crit)S.crits.push({kind:d.crit[0],title:d.crit[1]});
+ if(d.luck)addFortune(d.luck);
+ if(d.consume){const[r,n,lack]=d.consume;if((S.res[r]||0)>=n)S.res[r]-=n;else doFx(lack);}
+ (d.if||[]).forEach(x=>{if(cond(x.if)){const{if:_,...rest}=x;doFx(rest)}});
+}
+function paras(n){const out=[],used=new Set();
+ (n.text||[]).forEach(p=>{
+  if(typeof p==='string'){out.push(p);return}
+  if(p.group&&used.has(p.group))return;
+  if(cond(p.if)){out.push(p.text);if(p.group)used.add(p.group)}
+  else if(p.else){out.push(p.else);if(p.group)used.add(p.group)}
+ });return out;}
+const choicesOf=n=>(n.choices||[]).filter(c=>cond(c.if));
+
+/* ----- 흐름 ----- */
+function begin(rec){
+ S.res={};S.max={};
+ B.resources.forEach(r=>{S.res[r.id]=r.start;if(r.max!=null)S.max[r.id]=r.max});
+ if(rec){ /* 이어받기: 직업·특징은 기록대로, 자원은 지난 장에서 남은 만큼 */
+  S.job=rec.job;S.traits=(rec.traits||[]).filter(id=>T[id]);
+  S.traits.forEach(id=>{Object.entries(T[id].max||{}).forEach(([k,v])=>S.max[k]=(S.max[k]||0)+v)});
+  B.resources.forEach(r=>{if(rec.res&&rec.res[r.id]!=null)S.res[r.id]=Math.min(S.max[r.id]??Infinity,rec.res[r.id])});
+  S.insp=rec.insp||0;S.luck=rec.luck??1;S.items=(rec.items||[]).slice();S.comp=(rec.comp||[]).slice();S.flags={...(rec.flags||{})};S.crits=(rec.crits||[]).slice();S.fortune=rec.fortune||0;
+ }else S.traits.forEach(id=>{const t=T[id];
+  Object.entries(t.max||{}).forEach(([k,v])=>S.max[k]=(S.max[k]||0)+v);
+  Object.entries(t.start||{}).forEach(([k,v])=>addRes(k,v));});
+ S.screen='play';go(B.meta.start);
+}
+function go(to,fx){
+ const b={res:{...S.res},insp:S.insp,items:S.items.length,comp:S.comp.slice(),crits:S.crits.length};
+ doFx(fx);S.node=to;S.check=null;if(B.nodes[to].when)S.when=B.nodes[to].when;doFx(B.nodes[to].do);
+ const d=[];
+ B.resources.forEach(r=>{const x=S.res[r.id]-b.res[r.id];if(x)d.push([`${r.name} ${x>0?'+':'−'}${val(r,Math.abs(x))}`,x>0?'up':'down'])});
+ if(S.insp>b.insp)d.push([`기운 +${S.insp-b.insp}`,'up']);
+ S.items.slice(b.items).forEach(i=>d.push([`얻음: ${i}`,'up']));
+ S.comp.filter(c=>!b.comp.includes(c)).forEach(c=>d.push([`동료: ${c}`,'up']));
+ S.crits.slice(b.crits).forEach(c=>d.push([c.kind==='legend'?'전설의 페이지 획득':'대참사 페이지 획득','gold']));
+ if(S.crits.slice(b.crits).some(c=>c.kind==='disaster'))addFortune(1);
+ B.resources.forEach(r=>{if(r.low&&S.res[r.id]===r.min&&b.res[r.id]>r.min)d.push([r.low,'down'])});
+ S.delta=d;save();render(true);
+}
+function pick(i){const all=choicesOf(B.nodes[S.node]),c=all[i];
+ if(!c.check&&all.some(x=>x.check))addFortune(1); /* 운에 맡길 수 있었는데 다른 길을 골랐다 */
+ if(c.special)addFortune(1);
+ if(c.check){S.check={i,roll:null};render();document.getElementById('checkpanel')?.scrollIntoView({behavior:'smooth',block:'center'});}
+ else go(c.to,c.do);}
+
+/* ----- 운에 맡기기: 숫자는 속에서만 ----- */
+function mods(skill,dc){
+ let total=0;const why=[];const j=job();
+ if(j.skill===skill){total+=3;why.push({t:j.edge,good:1,win:j.win})}
+ S.traits.forEach(id=>{const t=T[id];
+  const m=t.mod?.[skill];if(m){total+=m;why.push({t:t.edge,good:m>0,win:t.win,lose:t.lose,v:m})}
+  if(t.hardMod&&dc>=12){total+=t.hardMod;why.push({t:t.edge,good:0,lose:t.lose,v:t.hardMod})}});
+ return{total,why};
+}
+function helper(skill){
+ for(const[name,c] of Object.entries(B.companions||{}))
+  if(c.helps.includes(skill)&&S.comp.includes(name))
+   {const t=S.traits.find(id=>T[id].noHelp);return t?{blocked:1,line:T[t].edge||'혼자 해요'}:{name,...c};}
+ return null;
+}
+function level(dc,total,help){
+ let p=Math.min(.95,Math.max(.05,(21-(dc-total))/20));if(help&&!help.blocked)p=1-(1-p)*(1-p);
+ return p>=.65?'쉬움':p>=.45?'보통':'어려움';
+}
+const r20=()=>1+Math.floor(Math.random()*20);
+function roll(useLuck,again){
+ if(rolling)return;
+ const c=choicesOf(B.nodes[S.node])[S.check.i],k=c.check,{total,why}=mods(k.skill,k.dc),h=helper(k.skill);
+ if(useLuck)S.luck--;if(again)S.insp--;
+ const two=h&&!h.blocked&&!useLuck;
+ const pity=(!useLuck&&!k.big&&(S.streak||0)>=2)?3:0; /* 액땜: 화면에 안 나온다, 결정적 순간엔 없음 */
+ const judge=(d)=>{const u=Math.max(...d);return u===20?'crit':u===1?'fumble':u+total+pity>=k.dc?'ok':'fail'};
+ let dice=useLuck?[20]:two?[r20(),r20()]:[r20()];
+ let out=judge(dice),spent=0,saved='';
+ if(k.big&&!useLuck&&!S.check.fortuneUsed&&(out==='fail'||out==='fumble')){
+  const f=S.fortune||0;
+  if(f>=2){const was=out;dice=[...dice,r20()];out=judge(dice);if(out==='fumble')out='fail';spent=2;if(out==='ok'||out==='crit'||was==='fumble')saved=out==='fail'?'운이 따랐다. 크게 다치진 않았다.':'운이 따랐다. 그동안 쌓은 게 있었나 보다.';}
+  else if(f>=1&&out==='fumble'){out='fail';spent=1;saved='운이 따랐다. 크게 다치진 않았다.';}
+  if(spent){S.check.fortuneUsed=1;addFortune(-spent);}
+ }
+ const used=Math.max(...dice),sum=used+total+pity;
+ let line='';
+ if(useLuck)line='행운의 주사위를 썼다';
+ else if(saved)line=saved;
+ else if(out==='crit')line='전설의 페이지가 열린다';
+ else if(out==='fumble')line='대참사 페이지가 열린다';
+ else if(out==='ok'){
+  if(two&&Math.min(...dice)+total<k.dc)line=h.win;
+  else if(used<k.dc){const g=why.find(w=>w.good&&w.win);if(g)line=g.win}
+ }else{
+  const badSum=why.filter(w=>!w.good).reduce((a,w)=>a+(w.v||0),0);
+  if(badSum&&sum-badSum>=k.dc){const w=why.find(w=>!w.good&&w.lose);if(w)line=w.lose}
+ }
+ rolling=true;S.check.roll=null;render();
+ const els=[...document.querySelectorAll('.die')];els.forEach(e=>{e.classList.remove('idle');e.classList.add('rolling')});
+ const dur=matchMedia('(prefers-reduced-motion: reduce)').matches?300:1300,t0=performance.now();
+ (function tick(){const el=performance.now()-t0;els.forEach(e=>e.textContent=r20());
+  if(el<dur)setTimeout(tick,60+el/12);
+  else{rolling=false;S.check.roll={dice,used,out,line,luck:useLuck,again:!!again};save();render();}})();
+}
+function proceed(){const k=choicesOf(B.nodes[S.node])[S.check.i].check,r=S.check.roll;
+ S.rolls.push(r.out);
+ if(r.luck){S.fortune=0;S.streak=0}
+ else{addFortune(-1);S.streak=(r.out==='ok'||r.out==='crit')?0:(S.streak||0)+1}
+ go(k.to[r.out]);}
+
+/* ----- 책갈피 ----- */
+function putMark(){if(S.marks<=0||markSnap)return;S.marks--;S.delta=[[`${B.nodes[S.node].n}쪽에 책갈피를 꽂았다`,'gold']];markSnap=clone(S);save();render();}
+function backToMark(){if(!markSnap)return;S=clone(markSnap);markSnap=null;S.delta=[[`책갈피 꽂은 ${B.nodes[S.node].n}쪽으로 돌아왔다`,'gold']];save();render(true);}
+function restart(){clearSave();clearRecord();S=fresh();markSnap=null;
+ if(B.meta.first_file&&B.meta.first_file!==CUR){app.innerHTML='<p class="err">책을 펴는 중…</p>';load(B.meta.first_file,{});}else render(true);}
+function resume(){const d=loadSave();if(d){S=d.S;markSnap=d.markSnap;render(true)}}
+
+/* ----- 화면 ----- */
+function render(turn){
+ if(S.screen==='cover')app.innerHTML=coverView();
+ else if(S.screen==='traits'){app.innerHTML=traitsView();updateScale(true)}
+ else if(B.nodes[S.node].end)app.innerHTML=statusBar()+endView();
+ else app.innerHTML=statusBar()+toolbar()+pageView(turn,S.check?checkView():markTip()+choicesView());
+ if(turn)window.scrollTo({top:0});
+}
+function statusBar(){
+ return `<div class="status" role="status">${B.resources.map(r=>`<div class="st">${ICON[r.icon]||''}${r.name} ${val(r,S.res[r.id])}${S.max[r.id]!=null&&!r.unit?`<small>/${S.max[r.id]}</small>`:''}</div>`).join('')}
+  <div class="st">${ICON.insp}기운 ${S.insp}</div><div class="st">${ICON.luck}행운 ${S.luck}</div><div class="day">${esc(S.when||B.meta.chapter)}</div></div>`;
+}
+function toolbar(){
+ const serif=document.documentElement.dataset.body==='serif';
+ const fbtn=`<button class="tbtn font" onclick="toggleFont()" aria-label="${serif?'글씨 또렷하게':'책 글씨로'}" title="${serif?'글씨 또렷하게':'책 글씨로'}"><i class="gg"><span>가</span><span>가</span></i></button>`;
+ let m;
+ if(markSnap)m=`<button class="tbtn mark on" onclick="backToMark()">${ICON.mark}<b>${B.nodes[markSnap.node].n}쪽으로 돌아가기</b></button>`;
+ else{const ok=S.marks>0&&!S.check;m=`<button class="tbtn mark" onclick="putMark()" ${ok?'':'disabled'}>${ICON.mark}<b>책갈피 꽂기</b><small>${S.marks>0?S.marks+'번 남음':'다 씀'}</small></button>`;}
+ return `<div class="toolbar">${m}${fbtn}</div>`;
+}
+/* 처음 한 번만: 주사위 선택지가 처음 나오는 쪽에서 책갈피를 알려 준다 (이 기기에 한 번) */
+const TIPKEY='gamebook-tip-mark';
+function tipSeen(set){try{if(set)localStorage.setItem(TIPKEY,'1');return localStorage.getItem(TIPKEY)==='1'}catch(e){return !!set}}
+function markTip(){
+ const n=B.nodes[S.node];
+ if(S.check||markSnap||S.marks<=0||!choicesOf(n).some(c=>c.check)||tipSeen())return '';
+ return `<div class="tip" role="note"><b>${ICON.mark}책갈피</b><span>꽂아 두면, 결과가 마음에 안 들 때 이 쪽으로 돌아올 수 있어요.</span>
+  <div class="btns"><button class="big" onclick="tipSeen(1);putMark()">책갈피 꽂기</button><button class="big alt" onclick="tipSeen(1);render()">괜찮아요</button></div></div>`;
+}
+/* 글씨: 기본은 책 글씨(명조), 한 번 누르면 또렷한 고딕. 이 기기에 기억 */
+const FKEY='gamebook-font';
+function fontPref(){try{return localStorage.getItem(FKEY)||'serif'}catch(e){return 'serif'}}
+function toggleFont(){const f=document.documentElement.dataset.body==='serif'?'sans':'serif';document.documentElement.dataset.body=f;try{localStorage.setItem(FKEY,f)}catch(e){};render();}
+function pageView(turn,tail){const n=B.nodes[S.node];
+ let h=`<article class="page${turn?' turn':''}">${markSnap?`<div class="ribbon${markSnap.node===S.node?' here':''}" aria-label="${B.nodes[markSnap.node].n}쪽에 책갈피">${B.nodes[markSnap.node].n}<small>쪽</small></div>`:''}<div class="runhead"><span><b>${esc(B.meta.title)}</b> · ${esc(S.when?B.meta.chapter+' · '+S.when:B.meta.chapter)}</span></div><div class="pno"><em>${n.n}</em></div>`;
+ if(n.img)h+=`<figure class="plate"><img src="${esc(n.img)}" alt="${esc(n.alt||'')}" loading="lazy" decoding="async" onerror="this.parentNode.remove()"></figure>`;
+ h+=paras(n).map(p=>`<p>${fmt(p)}</p>`).join('');
+ if(n.box)h+=`<div class="jbox"><b>${fmt(n.box.title)}</b><span>${fmt(n.box.text)}</span></div>`;
+ if(S.delta.length)h+=`<div class="delta">${S.delta.map(([t,k])=>`<span class="chip ${k}">${esc(t)}</span>`).join('')}</div>`;
+ return h+(tail||'')+'</article>';
+}
+function choicesView(){
+ return `<div class="choices">${choicesOf(B.nodes[S.node]).map((c,i)=>{
+  let tag=c.tag?fmt(c.tag).replace('★','<span class="star">★</span>'):'';
+  if(c.check){const{total,why}=mods(c.check.skill,c.check.dc),h=helper(c.check.skill);
+   tag=['운에 맡기기 · '+level(c.check.dc,total,h),...why.map(w=>w.t),h&&!h.blocked?h.line:''].filter(Boolean).join(' · ');}
+  return `<button class="ch${c.special?' special':''}" onclick="pick(${i})"><span class="lbl"><b>${fmt(c.label)}</b>${tag?`<i>${tag}</i>`:''}</span><span class="to">${c.check?'<small>주사위</small>':'<small>→</small>'+B.nodes[c.to].n}</span></button>`;}).join('')}</div>`;
+}
+function checkView(){
+ const c=choicesOf(B.nodes[S.node])[S.check.i],k=c.check,{total,why}=mods(k.skill,k.dc),h=helper(k.skill),r=S.check.roll;
+ const pills=[`<span class="pill lv">${level(k.dc,total,h)}</span>`,...why.map(w=>`<span class="pill ${w.good?'good':'bad'}">${esc(w.t)}</span>`)];
+ if(h&&!h.blocked)pills.push(`<span class="pill good">${esc(h.line)} · 주사위 두 번</span>`);
+ if(h&&h.blocked)pills.push(`<span class="pill bad">${esc(h.line)}</span>`);
+ let x=`<section class="check" id="checkpanel"><h3>${fmt(c.label)}</h3><div class="dcrow">${pills.join('')}</div><div class="dice">`;
+ if(r){let once=false;r.dice.forEach(d=>{const u=d===r.used&&!once;if(u)once=true;x+=`<div class="die${u?'':' dim'}">${d}</div>`})}
+ else for(let i=0;i<(h&&!h.blocked?2:1);i++)x+=`<div class="die idle">?</div>`;
+ x+='</div>';
+ if(r){
+  const V={crit:'주사위가 기막히게 굴렀다!',ok:'잘 됐다!',fail:'아쉽게 안 됐다',fumble:'오늘은 운이 영 없었다…'};
+  x+=`<div class="verdict ${r.out}">${V[r.out]}</div>${r.line?`<div class="why">${esc(r.line)}</div>`:''}<div class="btns">`;
+  if((r.out==='fail'||r.out==='fumble')&&S.insp>0)x+=`<button class="big gold" onclick="roll(false,true)">기운 내서 한 번 더 (${S.insp})</button>`;
+  x+=`<button class="big" onclick="proceed()">다음 페이지로 → ${B.nodes[k.to[r.out]].n}</button></div>`;
+ }else{
+  x+=`<div class="btns"><button class="big" onclick="roll(false,false)" ${rolling?'disabled':''}>주사위 굴리기</button>`;
+  if(S.luck>0)x+=`<button class="big alt" onclick="roll(true,false)" ${rolling?'disabled':''}>행운의 주사위 쓰기<small>무조건 잘 된다</small></button>`;
+  if(!rolling)x+=`<button class="big alt" onclick="S.check=null;render()">다른 선택지 보기</button>`;
+  x+='</div>';if(S.luck>0&&!rolling)x+='<p class="note">행운의 주사위는 책 한 권에 딱 한 번 쓸 수 있습니다.</p>';
+ }
+ return x+'</section>';
+}
+function coverView(){
+ const d=loadSave(),m=B.meta,rec=loadRecord();
+ /* 지난 장 기록이 이 장으로 이어지는 것이면 "이어서 읽기"를 맨 위에 */
+ const carry=rec&&m.prev_id&&rec.from===m.prev_id&&!d;
+ return `<article class="page cover turn"><p class="sub">${esc(m.kicker)}</p><h1>${esc(m.title)}</h1><p class="sub">${esc(m.sub)}</p>
+  <div class="how">${(m.how||[]).map(([a,b])=>`<div><b>${esc(a)}</b><span>${esc(b)}</span></div>`).join('')}</div></article>
+  ${d&&!B.nodes[d.S.node]?.end?`<div class="btns"><button class="big" onclick="resume()">읽던 곳부터 · ${B.nodes[d.S.node].n}쪽</button></div>`:''}
+  ${carry?`<div class="btns"><button class="big" onclick="S=fresh();begin(loadRecord())">${esc(rec.chapter)}에 이어서 · ${esc(B.jobs.find(j=>j.id===rec.job)?.name||'그 사람')}으로 계속</button></div>`:''}
+  <h2 class="sec">${carry?'아니면, 다른 사람으로 새로 시작하기':esc(m.jobQ||'은퇴 전, 당신은 누구였나요?')}</h2>
+  <div class="choices">${B.jobs.map(j=>`<button class="ch" onclick="S.job='${j.id}';S.screen='traits';S.traits=[];render(true)"><span class="lbl"><b>${esc(j.name)}</b><i>${esc(j.desc)}</i></span><span class="to">→</span></button>`).join('')}</div>`;
+}
+
+/* ----- 저울 ----- */
+const weights=()=>{let g=0,b=0;S.traits.forEach(id=>T[id].side==='good'?g+=T[id].weight:b+=T[id].weight);return{g,b}};
+function traitsView(){
+ const card=t=>`<button class="tr ${t.side}" id="t-${t.id}" aria-pressed="false" onclick="toggleTrait('${t.id}')"><span class="tick">${t.side==='good'?'+':'−'}</span><span class="lbl"><b>${esc(t.name)}</b><i>${esc(t.desc)}</i></span><span class="w" aria-label="무게 ${t.weight}">${'●'.repeat(t.weight)}</span></button>`;
+ return `<article class="page turn"><div class="pno" style="font-size:36px">${esc(job().name)}</div><p>그럼 당신은 어떤 사람인가요? ${esc(B.traits.intro)}</p></article>
+ <div class="scale" aria-live="polite">
+  <svg viewBox="0 0 320 170" role="img" aria-label="좋은 점과 아쉬운 점의 저울">
+   <path d="M160 40 L160 150 M120 158 L200 158" stroke="var(--ink2)" stroke-width="5" stroke-linecap="round"/>
+   <path d="M146 158 L160 140 L174 158 z" fill="var(--ink2)"/>
+   <g class="beam" id="beam" style="transform-origin:160px 40px">
+    <rect x="44" y="36" width="232" height="8" rx="4" fill="var(--ink)"/>
+    <circle cx="160" cy="40" r="8" fill="var(--sun)"/>
+    <g class="pan" id="panL" style="transform-origin:52px 40px">
+     <path d="M52 40 L22 96 M52 40 L82 96" stroke="var(--ink2)" stroke-width="2"/>
+     <path d="M14 96 Q52 124 90 96 z" fill="var(--good)"/>
+     <text x="52" y="146" text-anchor="middle" font-size="17" font-weight="800" fill="var(--good)" font-family="Noto Sans KR, sans-serif">좋은 점</text>
+     <text id="gW" x="52" y="114" text-anchor="middle" font-size="15" font-weight="800" fill="var(--paper)" font-family="Noto Sans KR, sans-serif"></text>
+    </g>
+    <g class="pan" id="panR" style="transform-origin:268px 40px">
+     <path d="M268 40 L238 96 M268 40 L298 96" stroke="var(--ink2)" stroke-width="2"/>
+     <path d="M230 96 Q268 124 306 96 z" fill="var(--bad)"/>
+     <text x="268" y="146" text-anchor="middle" font-size="17" font-weight="800" fill="var(--bad)" font-family="Noto Sans KR, sans-serif">아쉬운 점</text>
+     <text id="bW" x="268" y="114" text-anchor="middle" font-size="15" font-weight="800" fill="var(--paper)" font-family="Noto Sans KR, sans-serif"></text>
+    </g>
+   </g>
+  </svg>
+  <p class="msg" id="smsg"></p>
+ </div>
+ <h2 class="sec">좋은 점</h2><div class="tlist">${B.traits.good.map(t=>card(T[t.id])).join('')}</div>
+ <h2 class="sec">아쉬운 점</h2><div class="tlist">${B.traits.bad.map(t=>card(T[t.id])).join('')}</div>
+ <div class="btns sticky"><button class="big" id="startBtn" onclick="begin()">이 사람으로 출발하기</button>
+  <button class="big alt" onclick="S.screen='cover';render(true)">직업 다시 고르기</button></div>`;
+}
+function toggleTrait(id){const i=S.traits.indexOf(id);i<0?S.traits.push(id):S.traits.splice(i,1);updateScale();}
+function updateScale(){
+ const{g,b}=weights(),a=Math.max(-14,Math.min(14,(b-g)*5));
+ document.getElementById('beam').style.transform=`rotate(${a}deg)`;
+ ['panL','panR'].forEach(p=>document.getElementById(p).style.transform=`rotate(${-a}deg)`);
+ document.getElementById('gW').textContent=g?'●'.repeat(g):'';
+ document.getElementById('bW').textContent=b?'●'.repeat(b):'';
+ Object.values(T).forEach(t=>document.getElementById('t-'+t.id)?.setAttribute('aria-pressed',S.traits.includes(t.id)));
+ const m=document.getElementById('smsg'),btn=document.getElementById('startBtn');
+ if(g>b){m.className='msg no';m.textContent='좋은 점이 더 무겁습니다. 아쉬운 점을 더 골라 저울을 맞춰 주세요.';btn.disabled=true}
+ else{m.className='msg ok';m.textContent=g===b?(g?'저울이 딱 맞았습니다. 출발할 수 있어요.':'아무것도 고르지 않고 출발해도 됩니다.'):'아쉬운 점이 더 무겁네요. 그래도 출발할 수 있어요.';btn.disabled=false}
+}
+
+function endView(){
+ const L=S.crits.filter(c=>c.kind==='legend'),D=S.crits.filter(c=>c.kind==='disaster');
+ const clues=(B.meta.clues||[]).filter(([f])=>S.flags[f]).map(([,l])=>l);
+ const good=S.rolls.filter(o=>o==='ok'||o==='crit').length;
+ const tn=side=>S.traits.filter(id=>T[id].side===side).map(id=>T[id].name).join(', ')||'없음';
+ const row=(a,b)=>`<div class="row"><span>${a}</span><span>${esc(b)}</span></div>`;
+ return `<article class="page end turn"><h2>${esc(B.meta.chapter)} 끝</h2>
+  ${paras(B.nodes[S.node]).map(p=>`<p>${fmt(p)}</p>`).join('')}
+  <div class="rows">${row('직업',job().name)}${row('좋은 점',tn('good'))}${row('아쉬운 점',tn('bad'))}
+   ${B.resources.map(r=>row(r.name,val(r,S.res[r.id])+(S.max[r.id]!=null&&!r.unit?' / '+S.max[r.id]:''))).join('')}
+   ${row('동료',S.comp.join(', ')||'없음')}${row('소지품',S.items.join(', ')||'없음')}
+   ${row('전설의 페이지',L.map(c=>c.title).join(', ')||'아직 없음')}${row('대참사 페이지',D.map(c=>c.title).join(', ')||'아직 없음')}
+   ${row('찾은 단서',clues.join(', ')||'아직 없음')}${row('운에 맡긴 결과',S.rolls.length?`${S.rolls.length}번 중 ${good}번 잘 됐다`:'없음')}</div>
+  <div class="next">${esc(B.meta.next)}</div></article>
+  <div class="btns">${B.meta.next_file?`<button class="big" onclick="nextChapter()">다음 장으로 넘어가기 · 기록을 이어받습니다</button>`:''}
+  <button class="big${B.meta.next_file?' alt':''}" onclick="restart()">다른 사람으로 처음부터</button></div>`;
+}
+
+/* ----- 시작 ----- */
+function boot(d){
+ T={};B.traits.good.forEach(t=>T[t.id]={...t,side:'good'});B.traits.bad.forEach(t=>T[t.id]={...t,side:'bad'});
+ S=d&&d.S?d.S:fresh();markSnap=d?.m||null;render(true);
+}
+let CUR=STORY;
+function load(file,d){CUR=file;
+ return fetch(file).then(r=>{if(!r.ok)throw 0;return r.json()}).then(b=>{B=b;boot(d)})
+  .catch(()=>{app.innerHTML='<p class="err">책을 불러오지 못했습니다. 잠시 후 다시 열어 주세요.</p>'});
+}
+function start(d){
+ document.documentElement.dataset.body=fontPref();
+ try{const q=new URLSearchParams(location.search).get('body');if(q)document.documentElement.dataset.body=q}catch(e){}
+ /* 읽던 장이 있으면 그 장 파일부터 편다 (장 파일들은 한 권 안에 같이 있다) */
+ let f=STORY;try{const c=localStorage.getItem('gamebook-current:'+STORY.replace(/^stories\//,'').replace(/\d*\.json$/,''));if(c&&/^stories\/[\w-]+\.json$/.test(c))f=c}catch(e){}
+ load(f,d);
+}
+window.claude?.hot?.snapshot?.(()=>({S,m:markSnap}));
+window.claude?.hot?.ready?window.claude.hot.ready(start):start(window.claude?.hot?.data??{});
+</script>

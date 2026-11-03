@@ -1,0 +1,47 @@
+# 미스터리 북스 — 제작 지침
+
+옛 RPG 게임책을 모바일로 옮긴 시리즈. 사용자는 총괄, Claude는 PD 겸 메인 작가. 의견은 솔직하게, 작업 요청은 묻기보다 바로 만들어 보여준다.
+
+**이 저장소가 원본이다.** 엔진, 도구, 이야기 원본, 그림이 모두 여기 있다. 예전 「제작 키트」 페이지는 더 쓰지 않는다. 세계관 바이블(Claude Docs): https://claude.ai/artifact/YVr3A8jT1zUcxi8KBTFiJp
+
+## 표면의 규칙 (절대)
+
+- 기준 독자: 게임 용어를 모르는 60대. "옛날 게임책이네" 하고 들어와 "요즘 책이라 이런 게 들어갔네" 하고 끄덕여야 한다.
+- 물 밑 설정은 크게, 화면에는 한 번에 하나씩. 한 장에 새 규칙은 하나만.
+- 화면에 숫자·게임 용어 금지(회귀, 루프, 판정, 보너스, 크리티컬, 퀘스트, 엔딩, 분기, HP 등 — 점검 관문이 잡는다). 쉬움·보통·어려움, "요리사라서 유리해요" 같은 말만.
+- 실패해도 막히지 않는다. 대참사 페이지는 웃기고 기억에 남게. 약점은 숫자 감점이 아니라 이야기를 바꾼다.
+- 한 페이지: 문단 4개 이하, 문단 120자 안팎, 선택지 3개 이하.
+- 독자는 성숙한 어른. 진지하게 정성 들여 쓰고 그 위에 코미디·블랙 유머를 얹는다. 교훈이나 감동을 직접 주려 하지 않는다.
+- 목표는 "오래 붙잡기"가 아니라 "좋은 시간".
+
+## 엔진이 하는 것
+
+자원(단위·최소·최대·바닥 문구), 기운(한 번 더), 행운의 주사위(책당 1번), 책갈피(장마다 2번, 처음 주사위 쪽에서 한 번만 안내), 직업, 좋은 점·아쉬운 점 저울, 동료(주사위 두 번), 조건 문단·묶음, 조건 선택지, 조건부 효과, 요일, 읽던 곳 기억, 그림(`img`/`alt`), 장과 장 사이 기록 이어받기, 보이지 않는 운 「복」, 책 꼴(누런 종이·상자 쪽 번호·인쇄된 선택지·명조 기본/「가가」로 고딕).
+
+**복**: 화면에 절대 안 나온다. 1에서 시작, 운에 맡길 때마다 −1. 운에 맡길 수 있는데 다른 길을 고르거나, ★ 직업다운 행동, `do.luck: 1`(나누기·돌보기·기다리기), 대참사를 겪으면 +1. 효과는 장마다 하나인 결정적 순간(`check.big: true`)에서만 — 실패하면 한 번 더 굴리거나 대참사를 막는다. 결정적 순간에는 연속 실패 보정(액땜)이 없다.
+
+## 순서
+
+1. **바이블 확인** — 표면의 규칙, 떡밥 표, 해당 책 현황. 이번 장에서 거둘 떡밥과 심을 떡밥을 정한다.
+2. **장 설계** — 줄거리 한두 줄, 날·요일 흐름, 운에 맡기는 순간 3~4번(각각 전설·성공·실패·대참사 페이지), 결정적 순간 하나, 복이 쌓일 자리 셋 이상, 약점이 이야기를 바꾸는 곳 2~3군데.
+3. **원본 쓰기** — `src/<책>N_story.py`. 다음 장은 `meta.id` = `<책>-N`, `prev_id`, `prev_file`, 앞 장에 `next_file`. 형식은 `src/drift_story.py` 맨 위와 README.
+4. **찍어내기** — `sh tools/build.sh <책> "<제목>"`. 점검 관문 오류 0, 자동 시험 오류 0이어야 끝난다(아니면 멈춘다).
+   - 자동 시험 기준: 모든 판이 끝에 닿음, 어려움 15% 안팎, 핵심 긴장 사건 20~45%, 전설 페이지가 너무 흔하지 않게.
+   - 복 확인: `node tools/sim.mjs <책> <장> reckless` 와 `careful` 비교. 결정적 순간에 안 된 비율 차이 15~25%p 목표.
+5. **그림** — 장마다 서너 장. Recraft 스타일 「게임북 어드벤처 — 극화 펜화」(`f73cc366-752e-476c-9cb4-b5b66c10db02`). 프롬프트에 주인공 고정 생김새를 매번 넣는다. 뽑은 뒤 `python3 tools/art.py <책> <이름> <주소>`. 원본에 `img`가 있는데 파일이 없으면 점검 관문이 멈춘다.
+6. **화면 확인** — `node tools/shot.mjs <책>` 후 `shots/<책>/` 를 직접 본다. 얇거나 작거나 흐린 글씨, 단어 중간 줄바꿈, 넘치는 버튼이 없는지.
+7. **편집자 눈으로 한 번 읽기** — 같은 어미 반복, 설명조, 감정을 말로 다 해 버리는 문장을 고친다. 장면마다 손에 잡히는 사물 하나, 대사 한 줄.
+8. **올리기** — 커밋하고 푸시. `docs/` 가 GitHub Pages로 열린다. 바이블의 떡밥 표와 현황을 고친다.
+
+## 주인공 생김새 (그림마다 프롬프트에)
+
+- 「표류 일기」: Korean man in his sixties, grey hair neatly parted, thin metal-rimmed glasses, wrinkled white dress shirt with a cruise name tag, trousers rolled up, one shoe missing. 동료 박말순 여사: plump Korean woman in her sixties, flower-patterned sun hat. 김 선장: old man in a white captain's uniform. 앵무새 꼬마 선장.
+- 「황금닭 사장님」: Korean man in his sixties, grey hair neatly parted, thin metal-rimmed glasses, plain apron over a white shirt, cap with a small chicken emblem.
+- 화풍 공통: monochrome black ink, 1970s–80s Japanese gekiga pen drawing, fine hatching, flat black planes, East Asian faces, realistic anatomy (not muscular), no color, no text.
+
+## 엔진을 고칠 때
+
+- 고치는 곳은 `engine/engine.html` 하나. `__BOOK__`, `__TITLE__` 자리는 그대로.
+- 새 데이터 기능을 넣으면 `tools/lint.mjs` 가 알도록 같이 고친다. 자동 시험 가짜 문서(`tools/sim.mjs` 의 `g.document`)에 없는 브라우저 기능을 쓰면 거기에도 넣는다.
+- 고친 뒤 모든 책을 다시 찍고, 모든 자동 시험과 화면 확인을 다시 돈다.
+- 가독성: 본문 16px·굵기 500 이상, 핵심 문구 20px·700 이상, 누르는 곳 48px 이상, `word-break: keep-all`. 명조 본문은 총괄님과 정한 예외(「가가」로 고딕 전환 가능).
