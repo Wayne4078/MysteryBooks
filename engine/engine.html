@@ -135,17 +135,17 @@ button:focus-visible{outline:3px solid var(--sun);outline-offset:2px}
 :root{
   --bg:#2B2621; --paper:#F3EAD3; --paper2:#E3D6B8; --ink:#1F1A13; --ink2:#463C2E; --line:#B5A585;
   --accent:#8C2F1C; --accent-ink:#FFF8EC; --sun:#C98B2A; --sun-ink:#1F1A13;
-  --good:#2F5E1F; --bad:#9A2A1A; --box:#1F1A13; --box-ink:#F3EAD3; --desk-ink:#EFE4CC;
+  --good:#2F5E1F; --bad:#9A2A1A; --box:#1F1A13; --box-ink:#F3EAD3; --desk-ink:#EFE4CC; --mem:#7A4E0C; --mem-glow:rgba(201,139,42,.8);
   --grain:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='160' height='160'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 .35 0 0 0 0 .27 0 0 0 0 .15 0 0 0 .09 0'/></filter><rect width='100%' height='100%' filter='url(%23n)'/></svg>");
 }
 @media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
   --bg:#0E0C0A; --paper:#241F18; --paper2:#1A1611; --ink:#EFE4CC; --ink2:#D3C5A7; --line:#54493A;
   --accent:#E8907A; --accent-ink:#1A0E09; --sun:#E0A64A; --sun-ink:#1A1206;
-  --good:#A3CF8C; --bad:#F2A08C; --box:#0E0C0A; --box-ink:#EFE4CC; --desk-ink:#EFE4CC; color-scheme:dark}}
+  --good:#A3CF8C; --bad:#F2A08C; --box:#0E0C0A; --box-ink:#EFE4CC; --desk-ink:#EFE4CC; --mem:#F0C46A; --mem-glow:rgba(240,196,106,.65); color-scheme:dark}}
 :root[data-theme="dark"]{
   --bg:#0E0C0A; --paper:#241F18; --paper2:#1A1611; --ink:#EFE4CC; --ink2:#D3C5A7; --line:#54493A;
   --accent:#E8907A; --accent-ink:#1A0E09; --sun:#E0A64A; --sun-ink:#1A1206;
-  --good:#A3CF8C; --bad:#F2A08C; --box:#0E0C0A; --box-ink:#EFE4CC; --desk-ink:#EFE4CC; color-scheme:dark}
+  --good:#A3CF8C; --bad:#F2A08C; --box:#0E0C0A; --box-ink:#EFE4CC; --desk-ink:#EFE4CC; --mem:#F0C46A; --mem-glow:rgba(240,196,106,.65); color-scheme:dark}
 html[data-body="serif"]{--f-body:"Noto Serif KR","Noto Serif CJK KR","AppleMyungjo","Batang",serif}
 html[data-body="serif"] body{font-weight:600}
 html[data-body="serif"] .ch .lbl b,html[data-body="serif"] .tr b{font-weight:700}
@@ -219,6 +219,15 @@ html[data-body="serif"] .ch .lbl b,html[data-body="serif"] .tr b{font-weight:700
 .err{color:var(--desk-ink)}
 .btns .big.alt{border-color:var(--desk-ink);color:var(--desk-ink)}
 
+/* 책이 지난 인생을 기억한다 — 그 말만 잉크가 스며 나오듯 금빛으로 떠올랐다가 보통 잉크로 가라앉는다. 처음 펼칠 때 한 번만. */
+.mem{animation:mem 3.2s ease-out .5s both}
+.mem.seen{animation:none}
+@keyframes mem{0%{color:transparent;text-shadow:0 0 14px transparent}
+ 30%{color:var(--mem);text-shadow:0 0 14px var(--mem-glow)}
+ 70%{color:var(--mem);text-shadow:0 0 6px var(--mem-glow)}
+ 100%{color:var(--ink);text-shadow:none}}
+@media (prefers-reduced-motion:reduce){.mem{animation:none;color:var(--mem)}.mem.seen{color:inherit}}
+
 /* 그래, 결심했어! — 도장처럼 찍힌다 */
 .stamp{margin:0 auto 16px;max-width:300px;text-align:center;border:3px double var(--accent);color:var(--accent);padding:8px 12px 10px;transform:rotate(-2.5deg);animation:stamp .45s cubic-bezier(.2,1.6,.4,1)}
 .stamp b{display:block;font-family:var(--f-disp);font-weight:800;font-size:28px;line-height:1.3}
@@ -283,7 +292,7 @@ const app=document.getElementById('app');
 const clone=o=>JSON.parse(JSON.stringify(o));
 const esc=s=>String(s).replace(/[&<>]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]));
 const job=()=>B.jobs.find(j=>j.id===S.job);
-const fmt=s=>esc(s).replace(/\{job\}/g,job()?job().short:'').replace(/\*\*(.+?)\*\*/g,'<span class="q">$1</span>');
+const fmt=s=>esc(s).replace(/\{job\}/g,job()?job().short:'').replace(/\*\*(.+?)\*\*/g,'<span class="q">$1</span>').replace(/\^\^(.+?)\^\^/g,'<span class="mem">$1</span>');
 const resDef=id=>B.resources.find(r=>r.id===id);
 const val=(r,v)=>r.unit?`${v.toLocaleString('ko-KR')}${r.unit}`:String(v);
 
@@ -319,7 +328,7 @@ function nextChapter(){
 const LKEY=()=>'gamebook-lives:'+SERIES();
 function lives(){try{return JSON.parse(localStorage.getItem(LKEY())||'[]')}catch(e){return[]}}
 function saveLife(){if(S.lifeSaved)return;S.lifeSaved=1;const end=paras(B.nodes[S.node]).join(' ');
- try{const L=lives();L.push({job:job()?.name||'',chapter:B.meta.chapter,took:(S.forks||[]).map(f=>f.took),flags:Object.keys(S.flags),end:end.replace(/\*\*/g,'')});localStorage.setItem(LKEY(),JSON.stringify(L.slice(-20)))}catch(e){}save()}
+ try{const L=lives();L.push({job:job()?.name||'',chapter:B.meta.chapter,took:(S.forks||[]).map(f=>f.took),flags:Object.keys(S.flags),end:end.replace(/\*\*|\^\^/g,'')});localStorage.setItem(LKEY(),JSON.stringify(L.slice(-20)))}catch(e){}save()}
 function relive(i){const f=(S.forks||[])[i];if(!f)return;
  const nS=clone(f.snap);nS.reliveAvoid={node:f.node,ti:f.ti,took:f.took};nS.lifeSaved=0;markSnap=null;
  if(f.file&&f.file!==CUR){app.innerHTML='<p class="err">그날로 돌아가는 중…</p>';try{localStorage.setItem(CKEY(),f.file)}catch(e){};load(f.file,{S:nS})}
@@ -359,12 +368,15 @@ function doFx(d){if(!d)return;
  if(d.consume){const[r,n,lack]=d.consume;if((S.res[r]||0)>=n)S.res[r]-=n;else doFx(lack);}
  (d.if||[]).forEach(x=>{if(cond(x.if)){const{if:_,...rest}=x;doFx(rest)}});
 }
-function paras(n){const out=[],used=new Set();
+/* 지난 인생을 기억하는 조건(lives·lived, 부정 아님)으로 나온 문단 — 펼칠 때 한 번 스며 나온다 */
+const atomsOf=c=>!c?[]:Array.isArray(c)?c.flatMap(atomsOf):c.split('|');
+const isMem=c=>atomsOf(c).some(a=>/^(lives|lived):/.test(a));
+function paras(n,meta){const out=[],used=new Set(),put=(t,m)=>out.push(meta?{t,m:m&&!t.includes('^^')}:t);
  (n.text||[]).forEach(p=>{
-  if(typeof p==='string'){out.push(p);return}
+  if(typeof p==='string'){put(p);return}
   if(p.group&&used.has(p.group))return;
-  if(cond(p.if)){out.push(p.text);if(p.group)used.add(p.group)}
-  else if(p.else){out.push(p.else);if(p.group)used.add(p.group)}
+  if(cond(p.if)){put(p.text,isMem(p.if));if(p.group)used.add(p.group)}
+  else if(p.else){put(p.else);if(p.group)used.add(p.group)}
  });return out;}
 const choicesOf=n=>(n.choices||[]).filter(c=>cond(c.if));
 
@@ -504,11 +516,14 @@ function markTip(){
 const FKEY='gamebook-font';
 function fontPref(){try{return localStorage.getItem(FKEY)||'serif'}catch(e){return 'serif'}}
 function toggleFont(){const f=document.documentElement.dataset.body==='serif'?'sans':'serif';document.documentElement.dataset.body=f;try{localStorage.setItem(FKEY,f)}catch(e){};render();}
+let memT=0;
 function pageView(turn,tail){const n=B.nodes[S.node];
  let h=`<article class="page${turn?' turn':''}">${markSnap?`<div class="ribbon${markSnap.node===S.node?' here':''}" aria-label="${B.nodes[markSnap.node].n}쪽에 책갈피">${B.nodes[markSnap.node].n}<small>쪽</small></div>`:''}<div class="runhead"><span><b>${esc(B.meta.title)}</b> · ${esc(S.when?B.meta.chapter+' · '+S.when:B.meta.chapter)}</span></div><div class="pno"><em>${n.n}</em></div>`;
  if(S.stamp)h+=`<div class="stamp" role="status"><b>그래, 결심했어!</b><span>${esc(S.stamp)}</span></div>`;
  if(n.img)h+=`<figure class="plate"><img src="${esc(n.img)}" alt="${esc(n.alt||'')}" loading="lazy" decoding="async" onerror="this.parentNode.remove()"></figure>`;
- h+=paras(n).map(p=>`<p>${fmt(p)}</p>`).join('');
+ const ps=paras(n,1),fresh1=!(S.memSeen||[]).includes(S.node);
+ if(fresh1&&ps.some(p=>p.m||p.t.includes('^^'))){const at=S.node;clearTimeout(memT);memT=setTimeout(()=>{if(S.node===at&&!(S.memSeen||[]).includes(at)){S.memSeen=(S.memSeen||[]).concat([at]);save()}},3800)}
+ h+=ps.map(p=>{let t=fmt(p.t);if(!fresh1)t=t.replace(/class="mem"/g,'class="mem seen"');return `<p${p.m?` class="mem${fresh1?'':' seen'}"`:''}>${t}</p>`}).join('');
  if(n.box)h+=`<div class="jbox"><b>${fmt(n.box.title)}</b><span>${fmt(n.box.text)}</span></div>`;
  if(S.delta.length)h+=`<div class="delta">${S.delta.map(([t,k])=>`<span class="chip ${k}">${esc(t)}</span>`).join('')}</div>`;
  return h+(tail||'')+'</article>';

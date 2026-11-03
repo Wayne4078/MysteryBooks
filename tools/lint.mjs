@@ -95,8 +95,13 @@ for (const id of ids) {
   }
   const text = n.text || [];
   text.forEach(p => {
-    if (typeof p === 'string') { say(id, p); if (p.length > LIMIT.chars) W(id, `문단이 김 (${p.length}자)`); }
-    else { checkCond(id, p.if); say(id, p.text); say(id, p.else); }
+    if (typeof p === 'string') { say(id, p); if (p.length > LIMIT.chars) W(id, `문단이 김 (${p.length}자)`); if (p.includes('^^')) E(id, '^^빛나는 말^^ 은 지난 인생을 기억하는 문단(lives·lived 조건)에만'); }
+    else {
+      checkCond(id, p.if); say(id, p.text); say(id, p.else);
+      const mem = [].concat(p.if || []).flatMap(c => String(c).split('|')).some(a => /^(lives|lived):/.test(a));
+      if ((!mem && String(p.text).includes('^^')) || String(p.else || '').includes('^^')) E(id, '^^빛나는 말^^ 은 지난 인생을 기억하는 문단(lives·lived 조건)에만');
+      if ((String(p.text).match(/\^\^/g) || []).length % 2) E(id, '^^ 짝이 안 맞음');
+    }
   });
   const visible = text.filter(p => typeof p === 'string' || !p.group).length + new Set(text.filter(p => p.group).map(p => p.group)).size;
   if (visible > LIMIT.paras) W(id, `문단이 최대 ${visible}개까지 보일 수 있음 (기준 ${LIMIT.paras})`);
