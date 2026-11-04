@@ -202,6 +202,14 @@ book = {
  }
 }
 
+# ── 그림 (2026-11-04 추가: 2~3쪽에 한 장, 얼굴보다 상황) ──
+assert "img" not in book["nodes"]["n50"], "n50 에 이미 그림"
+book["nodes"]["n50"].update({'img': 'art/sauces.webp', 'alt': '조금씩 다른 양념 그릇들이 줄지어 선 주방 조리대와 맛보는 손', 'cut': True})
+assert "img" not in book["nodes"]["n70"], "n70 에 이미 그림"
+book["nodes"]["n70"].update({'img': 'art/flyers.webp', 'alt': '가게 문 앞에서 반값 전단지를 나눠 주는 건너편 알바생, 유리문 안에서 팔짱 낀 사장님'})
+assert "img" not in book["nodes"]["n68"], "n68 에 이미 그림"
+book["nodes"]["n68"].update({'img': 'art/hospital.webp', 'alt': '대학병원 정문 앞에 치킨 상자를 산더미처럼 안고 선 사장님, 어리둥절한 의사와 간호사들', 'cut': True})
+
 here = os.path.dirname(os.path.abspath(__file__))
 out = os.path.join(here, "..", "stories", "chicken2.json")
 json.dump(book, open(out, "w", encoding="utf-8"), ensure_ascii=False, indent=1)

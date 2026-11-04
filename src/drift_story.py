@@ -189,6 +189,16 @@ book = {
  }
 }
 
+# ── 그림 (2026-11-04 추가: 2~3쪽에 한 장, 얼굴보다 상황) ──
+assert "img" not in book["nodes"]["n45"], "n45 에 이미 그림"
+book["nodes"]["n45"].update({'img': 'art/rocks.webp', 'alt': '뒤집힌 구명보트 밑에서 버둥거리는 박 여사의 다리, 바위에 팔짱 끼고 앉은 선장, 달려가는 주인공의 뒷모습'})
+assert "img" not in book["nodes"]["n22"], "n22 에 이미 그림"
+book["nodes"]["n22"].update({'img': 'art/parrot.webp', 'alt': '야자 잎 위에서 고개를 갸웃하는 앵무새, 아래 모래밭의 여행 가방', 'cut': True})
+assert "img" not in book["nodes"]["n60"], "n60 에 이미 그림"
+book["nodes"]["n60"].update({'img': 'art/heat.webp', 'alt': '땡볕 아래 야자나무 그늘에 주저앉아 모자로 부채질하는 박 여사', 'cut': True})
+assert "img" not in book["nodes"]["n80"], "n80 에 이미 그림"
+book["nodes"]["n80"].update({'img': 'art/notebook.webp', 'alt': '밤바다 모닥불 곁 모래 위에 펼쳐진 수첩과 몽당연필', 'cut': True, 'img_if': 'flag:fire'})
+
 here = os.path.dirname(os.path.abspath(__file__))
 out = os.path.join(here, "..", "stories", "drift.json")
 os.makedirs(os.path.dirname(out), exist_ok=True)

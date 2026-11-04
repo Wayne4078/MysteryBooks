@@ -96,6 +96,7 @@ for (const id of ids) {
   if (nums.has(n.n)) E(id, `페이지 번호 ${n.n} 이 ${nums.get(n.n)} 와 겹침`); else nums.set(n.n, id);
   if (n.when) say(id, n.when);
   if (n.fork) { say(id, n.fork); (n.choices || []).forEach((c, i) => { if (!c.life) W(`${id}#${i + 1}`, '갈림길 선택지에 life(짧은 말)가 없음 — 라벨이 대신 쓰인다'); say(id, c.life); }); forks++; }
+  if (n.img_if) checkCond(id, n.img_if);
   if (n.img) {
     if (!/^art\/[\w-]+\.(webp|png|jpg)$/.test(n.img)) E(id, `그림 경로는 art/<이름>.webp 꼴이어야 함: ${n.img}`);
     else if (!existsSync(join(here, '..', 'art', SERIES, n.img.slice(4)))) E(id, `그림이 아직 없음: art/${SERIES}/${n.img.slice(4)} — python3 tools/art.py ${SERIES} ${n.img.slice(4, -5)} <Recraft 주소>`);

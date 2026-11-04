@@ -1,5 +1,5 @@
 # 그림 한 장 들이기 — python3 tools/art.py <책> <이름> <Recraft 이미지 주소>
-# 내려받아 흑백·720×960 안팎·webp로 줄여 art/<책>/<이름>.webp 에 둔다. 원본은 art/_src/ 에 (저장소에는 안 올림)
+# 내려받아 흑백·720×960 안팎(작은 컷은 4:3으로 뽑으면 720×540)·webp로 줄여 art/<책>/<이름>.webp 에 둔다. 원본은 art/_src/ 에 (저장소에는 안 올림)
 import sys, os, urllib.request
 from PIL import Image
 book, name, url = sys.argv[1], sys.argv[2], sys.argv[3]

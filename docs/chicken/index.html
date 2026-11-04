@@ -373,6 +373,10 @@ html[data-body="serif"] .ch .lbl b,html[data-body="serif"] .tr b{font-weight:700
 .big.relive{background:transparent;border:2px solid var(--accent);color:var(--accent)}
 .big.quiet{width:100%;background:transparent;border:1.5px solid var(--line);color:var(--ink2);font-size:18px}
 .forktip{border-color:var(--accent)}
+
+/* 작은 컷: 옛날 책 본문 위의 작은 삽화. 큰 삽화는 핵심 장면에만 */
+.plate.cut{width:76%;margin:2px auto 16px}
+.plate.cut img{aspect-ratio:auto}
 </style>
 
 <div class="wrap" id="app"><p class="err">책을 펴는 중…</p></div>
@@ -639,7 +643,7 @@ let memT=0;
 function pageView(turn,tail){const n=B.nodes[S.node];
  let h=`<article class="page${turn?' turn':''}">${markSnap?`<div class="ribbon${markSnap.node===S.node?' here':''}" aria-label="${B.nodes[markSnap.node].n}쪽에 책갈피">${B.nodes[markSnap.node].n}<small>쪽</small></div>`:''}<div class="runhead"><span><b>${esc(B.meta.title)}</b> · ${esc(S.when?B.meta.chapter+' · '+S.when:B.meta.chapter)}</span></div><div class="pno"><em>${n.n}</em></div>`;
  if(S.stamp)h+=`<div class="stamp" role="status"><b>그래, 결심했어!</b><span>${esc(S.stamp)}</span></div>`;
- if(n.img)h+=`<figure class="plate"><img src="${esc(n.img)}" alt="${esc(n.alt||'')}" loading="lazy" decoding="async" onerror="this.parentNode.remove()"></figure>`;
+ if(n.img&&cond(n.img_if))h+=`<figure class="plate${n.cut?' cut':''}"><img src="${esc(n.img)}" alt="${esc(n.alt||'')}" loading="lazy" decoding="async" onerror="this.parentNode.remove()"></figure>`;
  const ps=paras(n,1),fresh1=!(S.memSeen||[]).includes(S.node);
  if(fresh1&&ps.some(p=>p.m||p.t.includes('^^'))){const at=S.node;clearTimeout(memT);memT=setTimeout(()=>{if(S.node===at&&!(S.memSeen||[]).includes(at)){S.memSeen=(S.memSeen||[]).concat([at]);save()}},3800)}
  h+=ps.map(p=>{let t=fmt(p.t);if(!fresh1)t=t.replace(/class="mem"/g,'class="mem seen"');return `<p${p.m?` class="mem${fresh1?'':' seen'}"`:''}>${t}</p>`}).join('');

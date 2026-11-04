@@ -21,7 +21,7 @@ await tick();
 
 const firstFile = E.B.meta.first_file || 'stories/' + book + '.json';
 const MEMO_NODES = ['w90', 'f93', 'n290'];           // 기억으로만 닿는 쪽
-const st = { people: 0, errs: 0, trueAt: {}, never: 0, countBad: 0, glowByLife: {}, memoNodes: {}, forkSides: {} };
+const st = { pages: 0, imgs: 0, people: 0, errs: 0, trueAt: {}, never: 0, countBad: 0, glowByLife: {}, memoNodes: {}, forkSides: {} };
 
 async function liveOnce(lifeNo) {
   await E.load(firstFile, {}); await tick();
@@ -48,6 +48,7 @@ async function liveOnce(lifeNo) {
       if (node.fork) { const k = node.fork + ' → ' + (ch[i].life || ch[i].label); st.forkSides[k] = (st.forkSides[k] || 0) + 1; }
       E.pick(i);
       if (E.S.check) { E.roll(false, false); E.proceed(); }
+      st.pages++; if (E.B.nodes[E.S.node].img) st.imgs++;
       if (MEMO_NODES.includes(E.S.node)) st.memoNodes[E.S.node] = (st.memoNodes[E.S.node] || 0) + 1;
       if (app.innerHTML.includes('undefined')) throw new Error('undefined ' + E.S.node);
     }
@@ -77,6 +78,7 @@ console.log({
   book, policy: POLICY, people: st.people, livesEach: LIVES, errs: st.errs, lifeCountWrong: st.countBad,
   trueEndBy: Object.fromEntries(Array.from({ length: LIVES }, (_, k) => k + 1).map(L => [L + '번째까지', pct(cum += (st.trueAt[L] || 0))])),
   neverTrueEnd: pct(st.never),
+  pagesPerPicture: +(st.pages / Math.max(1, st.imgs)).toFixed(1),
   glowPerPerson: Object.fromEntries(Object.entries(st.glowByLife).map(([k, v]) => [k + '번째 인생', +(v / st.people).toFixed(1)])),
   memoryPagesReached: st.memoNodes, forkSides: st.forkSides
 });

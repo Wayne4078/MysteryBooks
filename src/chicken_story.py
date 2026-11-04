@@ -147,6 +147,20 @@ book = {
  }
 }
 
+# ── 그림 (2026-11-04 추가: 2~3쪽에 한 장, 얼굴보다 상황) ──
+assert "img" not in book["nodes"]["n4"], "n4 에 이미 그림"
+book["nodes"]["n4"].update({'img': 'art/coffee.webp', 'alt': '장부와 영수증 위로 번지는 엎어진 커피, 허공에 굳은 두 손', 'cut': True})
+assert "img" not in book["nodes"]["n9"], "n9 에 이미 그림"
+book["nodes"]["n9"].update({'img': 'art/rival.webp', 'alt': '길 건너 치킨킹덤 앞 긴 줄과 확성기를 든 젊은 사장, 문간에서 지켜보는 사장님의 뒷모습', 'cut': True})
+assert "img" not in book["nodes"]["n12"], "n12 에 이미 그림"
+book["nodes"]["n12"].update({'img': 'art/supplier.webp', 'alt': '가게 카운터 앞에서 서류 가방을 열며 한숨 쉬는 납품 업체 최 과장', 'cut': True})
+assert "img" not in book["nodes"]["n20"], "n20 에 이미 그림"
+book["nodes"]["n20"].update({'img': 'art/friend.webp', 'alt': '가게 탁자에 커피 두 잔, 두 손 모아 부탁하는 병철이와 팔짱 낀 사장님'})
+assert "img" not in book["nodes"]["n30"], "n30 에 이미 그림"
+book["nodes"]["n30"].update({'img': 'art/fryer.webp', 'alt': '끓어오르는 튀김기와 집게 든 두 손, 줄줄이 나오는 주문서와 울리는 휴대폰', 'cut': True})
+assert "img" not in book["nodes"]["n40"], "n40 에 이미 그림"
+book["nodes"]["n40"].update({'img': 'art/rent.webp', 'alt': '셔터 내린 밤, 휴대폰 이체 단추 위에 멈춘 엄지', 'cut': True})
+
 here = os.path.dirname(os.path.abspath(__file__))
 out = os.path.join(here, "..", "stories", "chicken.json")
 json.dump(book, open(out, "w", encoding="utf-8"), ensure_ascii=False, indent=1)

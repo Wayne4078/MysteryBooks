@@ -283,6 +283,20 @@ book = {
  }
 }
 
+# ── 그림 (2026-11-04 추가: 2~3쪽에 한 장, 얼굴보다 상황) ──
+assert "img" not in book["nodes"]["n201"], "n201 에 이미 그림"
+book["nodes"]["n201"].update({'img': 'art/dawn.webp', 'alt': '동굴 입구에서 내려다본 김 오르는 아침 숲, 기지개 켜는 박 여사', 'cut': True, 'img_if': 'flag:cave_found'})
+assert "img" not in book["nodes"]["n209"], "n209 에 이미 그림"
+book["nodes"]["n209"].update({'img': 'art/smoke.webp', 'alt': '동굴 입구 앞에서 섬 반대편 연기를 가리키는 박 여사, 동굴 쪽으로 깃털을 부풀린 앵무새'})
+assert "img" not in book["nodes"]["n236"], "n236 에 이미 그림"
+book["nodes"]["n236"].update({'img': 'art/stuck.webp', 'alt': '바위 틈에 몸이 반쯤 끼어 버둥거리는 다리, 그 옆에서 진지하게 작전을 짜는 박 여사와 앵무새', 'cut': True})
+assert "img" not in book["nodes"]["n270"], "n270 에 이미 그림"
+book["nodes"]["n270"].update({'img': 'art/ship.webp', 'alt': '수평선의 작은 배, 젖은 풀을 모닥불에 던지는 안전모의 최 씨, 솟는 연기', 'cut': True})
+assert "img" not in book["nodes"]["n280"], "n280 에 이미 그림"
+book["nodes"]["n280"].update({'img': 'art/sunset.webp', 'alt': '바다로 지는 해, 모닥불가의 작은 그림자들, 바위 위에 펼친 수첩', 'cut': True})
+assert "img" not in book["nodes"]["n292"], "n292 에 이미 그림"
+book["nodes"]["n292"].update({'img': 'art/oldnote.webp', 'alt': '기름종이에서 꺼낸 낡은 수첩, 같은 줄이 빽빽하게 적힌 누런 장을 든 두 손'})
+
 out = os.path.join(here, "..", "stories", "drift3.json")
 json.dump(book, open(out, "w", encoding="utf-8"), ensure_ascii=False, indent=1)
 print("wrote", os.path.normpath(out), len(book["nodes"]), "pages")

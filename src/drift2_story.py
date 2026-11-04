@@ -214,6 +214,18 @@ book = {
  }
 }
 
+# ── 그림 (2026-11-04 추가: 2~3쪽에 한 장, 얼굴보다 상황) ──
+assert "img" not in book["nodes"]["n101"], "n101 에 이미 그림"
+book["nodes"]["n101"].update({'img': 'art/captain.webp', 'alt': '아침 바닷가, 바다만 바라보는 선장의 뒷모습과 숲을 가리키는 박 여사, 그 사이에 선 주인공'})
+assert "img" not in book["nodes"]["n120"], "n120 에 이미 그림"
+book["nodes"]["n120"].update({'img': 'art/creek.webp', 'alt': '맑은 개울에 손을 모아 넣은 늙은 두 손, 그 사이를 빠져나가는 은빛 물고기', 'cut': True})
+assert "img" not in book["nodes"]["n130"], "n130 에 이미 그림"
+book["nodes"]["n130"].update({'img': 'art/tally.webp', 'alt': '바위에 다섯 획씩 새긴 날짜 표시를 손끝으로 더듬는 손', 'cut': True})
+assert "img" not in book["nodes"]["n125"], "n125 에 이미 그림"
+book["nodes"]["n125"].update({'img': 'art/pants.webp', 'alt': '떠내려가는 바지를 속옷 차림으로 쫓아 뛰는 주인공, 바위에 엎드려 웃는 박 여사', 'cut': True})
+assert "img" not in book["nodes"]["n135"], "n135 에 이미 그림"
+book["nodes"]["n135"].update({'img': 'art/parasol.webp', 'alt': '빗속 돌풍에 펼친 양산째 떠오른 주인공과 두 팔 벌려 받으려는 박 여사', 'cut': True})
+
 here = os.path.dirname(os.path.abspath(__file__))
 out = os.path.join(here, "..", "stories", "drift2.json")
 json.dump(book, open(out, "w", encoding="utf-8"), ensure_ascii=False, indent=1)
