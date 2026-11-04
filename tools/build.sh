@@ -18,3 +18,6 @@ sed -e "s/__BOOK__/${BOOK}/" -e "s/__TITLE__/${TITLE}/" engine/engine.html > doc
 # 그림: art/<책>/ 이 있으면 docs/<책>/art/ 로 같이 간다
 if [ -d "art/${BOOK}" ]; then mkdir -p docs/${BOOK}/art; cp art/${BOOK}/* docs/${BOOK}/art/; fi
 for name in $CHAPTERS; do node tools/sim.mjs ${BOOK} ${name} | tee /tmp/mb-sim.$$.out; grep -q "errs: 0," /tmp/mb-sim.$$.out || { echo "자동 시험 실패: ${name}"; exit 1; }; done
+# 여러 인생 시험: 한 사람이 네 번 연달아 산다 — 막힘 없음, 인생은 한 번에 하나씩 세어짐
+node tools/lives.mjs ${BOOK} 4 150 curious | tee /tmp/mb-lives.$$.out
+grep -q "errs: 0," /tmp/mb-lives.$$.out && grep -q "lifeCountWrong: 0," /tmp/mb-lives.$$.out || { echo "여러 인생 시험 실패"; exit 1; }

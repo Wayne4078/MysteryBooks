@@ -32,7 +32,12 @@ if (B.meta.prev_file) {
     const prev = JSON.parse(readFileSync(p, 'utf8'));
     if (B.meta.prev_id !== prev.meta.id) E('meta', `prev_id(${B.meta.prev_id})가 앞 장 id(${prev.meta.id})와 다름`);
     const grab = d => { if (!d) return; (d.give || []).forEach(x => given.has.add(x)); (d.flag || []).forEach(x => given.flag.add(x)); (d.comp || []).forEach(x => given.comp.add(x)); (Array.isArray(d.if) ? d.if : []).forEach(({ if: _, ...rest }) => grab(rest)); if (d.consume) grab(d.consume[2]); };
-    Object.values(prev.nodes).forEach(n => { grab(n.do); (n.choices || []).forEach(c => grab(c.do)); });
+    // 앞 장의 앞 장까지 거슬러 올라간다 (1일째에 합류한 동료는 3일째에도 있다)
+    for (let q = prev, hop = 0; q && hop < 20; hop++) {
+      Object.values(q.nodes).forEach(n => { grab(n.do); (n.choices || []).forEach(c => grab(c.do)); });
+      const pp = q.meta.prev_file && join(here, '..', q.meta.prev_file);
+      q = pp && existsSync(pp) ? JSON.parse(readFileSync(pp, 'utf8')) : null;
+    }
     if (prev.meta.next_file !== file.replace(/^.*?(stories\/)/, '$1')) W('meta', `앞 장의 next_file(${prev.meta.next_file})이 이 파일을 가리키지 않음`);
   }
 }

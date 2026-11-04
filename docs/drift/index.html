@@ -374,8 +374,8 @@ function clearSave(){try{localStorage.removeItem(KEY())}catch(e){}}
    새로 받는 것: 책갈피 2번, 주사위 기록. 새 장에만 있는 자원은 그 장의 시작값으로. */
 const SERIES=()=>B.meta.series||B.meta.id.replace(/-\d+$/,'');
 const RKEY=()=>'gamebook-record:'+SERIES(), CKEY=()=>'gamebook-current:'+SERIES();
-function saveRecord(){try{const{job,traits,res,max,insp,luck,items,comp,flags,crits,fortune,forks}=S;
- localStorage.setItem(RKEY(),JSON.stringify({from:B.meta.id,chapter:B.meta.chapter,job,traits,res,max,insp,luck,items,comp,flags,crits,fortune,forks}))}catch(e){}}
+function saveRecord(){try{const{job,traits,res,max,insp,luck,items,comp,flags,crits,fortune,forks,lifeId,path}=S;
+ localStorage.setItem(RKEY(),JSON.stringify({from:B.meta.id,chapter:B.meta.chapter,job,traits,res,max,insp,luck,items,comp,flags,crits,fortune,forks,lifeId,path}))}catch(e){}}
 function loadRecord(){try{const r=JSON.parse(localStorage.getItem(RKEY())||'null');return r&&r.job?r:null}catch(e){return null}}
 function clearRecord(){try{localStorage.removeItem(RKEY());localStorage.removeItem(CKEY())}catch(e){}}
 function nextChapter(){
@@ -391,17 +391,23 @@ function nextChapter(){
 /* ----- 다시 사는 책: 갈림길과 인생 기록 -----
    갈림길(page.fork = 이름, choice.life = 짧은 말): 고르는 순간의 상태를 통째로 남겨 둔다. 장을 끝내면 "다른 길로 살아 보기"로
    그 순간에 돌아가 반대쪽 인생을 산다. 끝까지 산 인생은 이 기기에 쌓이고(lives), 다음 판의 글이 그걸 기억할 수 있다. */
+/* 인생 하나 = 이름표(lifeId) 하나. 첫 해가 지면(첫 장을 끝내면) 기록되고, 같은 인생의 다음 장은 그 줄을 고쳐 쓴다.
+   path = 그 인생이 지나간 쪽 순서 — 나중에 "당신이 살아 본 그대로의 책"을 엮는 재료. 조건 lives·lived 는 지금 인생을 빼고 센다. */
 const LKEY=()=>'gamebook-lives:'+SERIES();
+const newLife=()=>Date.now().toString(36)+Math.random().toString(36).slice(2,6);
 function lives(){try{return JSON.parse(localStorage.getItem(LKEY())||'[]')}catch(e){return[]}}
+const pastLives=()=>lives().filter(l=>!l.id||l.id!==S.lifeId);
 function saveLife(){if(S.lifeSaved)return;S.lifeSaved=1;const end=paras(B.nodes[S.node]).join(' ');
- try{const L=lives();L.push({job:job()?.name||'',chapter:B.meta.chapter,took:(S.forks||[]).map(f=>f.took),flags:Object.keys(S.flags),end:end.replace(/\*\*|\^\^/g,'')});localStorage.setItem(LKEY(),JSON.stringify(L.slice(-20)))}catch(e){}save()}
+ try{const L=lives(),e={id:S.lifeId,job:job()?.name||'',chapter:B.meta.chapter,took:(S.forks||[]).map(f=>f.took),flags:Object.keys(S.flags),end:end.replace(/\*\*|\^\^/g,''),path:(S.path||[]).slice(),at:Date.now()};
+  const i=S.lifeId?L.findIndex(l=>l.id===S.lifeId):-1;if(i>=0)L[i]=e;else L.push(e);
+  localStorage.setItem(LKEY(),JSON.stringify(L.slice(-20)))}catch(e){}save()}
 function relive(i){const f=(S.forks||[])[i];if(!f)return;
- const nS=clone(f.snap);nS.reliveAvoid={node:f.node,ti:f.ti,took:f.took};nS.lifeSaved=0;markSnap=null;
+ const nS=clone(f.snap);nS.reliveAvoid={node:f.node,ti:f.ti,took:f.took};nS.lifeSaved=0;nS.lifeId=newLife();markSnap=null; /* 다른 길 = 다른 인생 */
  if(f.file&&f.file!==CUR){app.innerHTML='<p class="err">그날로 돌아가는 중…</p>';try{localStorage.setItem(CKEY(),f.file)}catch(e){};load(f.file,{S:nS})}
  else{S=nS;save();render(true)}}
 const ORD=['첫','두','세','네','다섯','여섯','일곱','여덟','아홉','열'];
 
-function fresh(){return{screen:'cover',job:null,traits:[],res:{},max:{},insp:0,luck:1,marks:2,items:[],comp:[],flags:{},crits:[],node:null,check:null,rolls:[],delta:[],when:null,fortune:1,streak:0,forks:[]};}
+function fresh(){return{screen:'cover',job:null,traits:[],res:{},max:{},insp:0,luck:1,marks:2,items:[],comp:[],flags:{},crits:[],node:null,check:null,rolls:[],delta:[],when:null,fortune:1,streak:0,forks:[],lifeId:null,path:[]};}
 
 /* ----- 복: 화면에 절대 안 보이는 운. 복은 쌓이고, 주사위는 복을 쓴다 -----
    쌓이는 곳: 운에 맡기지 않고 다른 길을 고를 때, ★ 직업다운 행동, 작가가 do.luck 으로 표시한 선택, 대참사를 겪은 뒤(액땜).
@@ -413,8 +419,8 @@ function addFortune(v){S.fortune=Math.max(0,Math.min(FMAX,(S.fortune||0)+v))}
 
 /* ----- 조건과 효과 ----- */
 function atom(a){const neg=a[0]==='!';if(neg)a=a.slice(1);const[k,v]=a.split(':');
- if(k==='lives'){const r=lives().length>=+v;return neg?!r:r}
- if(k==='lived'){const r=lives().some(l=>(l.flags||[]).includes(v));return neg?!r:r}
+ if(k==='lives'){const r=pastLives().length>=+v;return neg?!r:r}
+ if(k==='lived'){const r=pastLives().some(l=>(l.flags||[]).includes(v));return neg?!r:r}
  if(k==='res'){const m=v.match(/^(\w+)(>=|<=|>|<|=)(-?\d+)$/);if(!m)return false;const x=S.res[m[1]]??0,n=+m[3];const r=m[2]==='>='?x>=n:m[2]==='<='?x<=n:m[2]==='>'?x>n:m[2]==='<'?x<n:x===n;return neg?!r:r}
  const r=k==='flag'?!!S.flags[v]:k==='has'?S.items.includes(v):k==='job'?S.job===v:k==='trait'?S.traits.includes(v):k==='comp'?S.comp.includes(v):false;
  return neg?!r:r;}
@@ -454,8 +460,8 @@ function begin(rec){
   S.job=rec.job;S.traits=(rec.traits||[]).filter(id=>T[id]);
   S.traits.forEach(id=>{Object.entries(T[id].max||{}).forEach(([k,v])=>S.max[k]=(S.max[k]||0)+v)});
   B.resources.forEach(r=>{if(rec.res&&rec.res[r.id]!=null)S.res[r.id]=Math.min(S.max[r.id]??Infinity,rec.res[r.id])});
-  S.insp=rec.insp||0;S.luck=rec.luck??1;S.items=(rec.items||[]).slice();S.comp=(rec.comp||[]).slice();S.flags={...(rec.flags||{})};S.crits=(rec.crits||[]).slice();S.fortune=rec.fortune||0;S.forks=(rec.forks||[]).slice();
- }else S.traits.forEach(id=>{const t=T[id];
+  S.insp=rec.insp||0;S.luck=rec.luck??1;S.items=(rec.items||[]).slice();S.comp=(rec.comp||[]).slice();S.flags={...(rec.flags||{})};S.crits=(rec.crits||[]).slice();S.fortune=rec.fortune||0;S.forks=(rec.forks||[]).slice();S.lifeId=rec.lifeId||newLife();S.path=(rec.path||[]).slice();
+ }else{S.lifeId=newLife();S.path=[]} if(!rec)S.traits.forEach(id=>{const t=T[id];
   Object.entries(t.max||{}).forEach(([k,v])=>S.max[k]=(S.max[k]||0)+v);
   Object.entries(t.start||{}).forEach(([k,v])=>addRes(k,v));});
  S.screen='play';go(B.meta.start);
@@ -463,7 +469,7 @@ function begin(rec){
 function go(to,fx){
  const b={res:{...S.res},insp:S.insp,items:S.items.length,comp:S.comp.slice(),crits:S.crits.length};
  S.stamp=null;if(S.forkPick){S.forks=(S.forks||[]).concat([S.forkPick]);S.stamp=S.forkPick.took;S.forkPick=null;S.reliveAvoid=null}
- doFx(fx);S.node=to;S.check=null;if(B.nodes[to].when)S.when=B.nodes[to].when;doFx(B.nodes[to].do);
+ doFx(fx);S.node=to;S.check=null;S.path=(S.path||[]).concat([B.meta.id+'/'+to]);if(B.nodes[to].when)S.when=B.nodes[to].when;doFx(B.nodes[to].do);
  const d=[];
  B.resources.forEach(r=>{const x=S.res[r.id]-b.res[r.id];if(x)d.push([`${r.name} ${x>0?'+':'−'}${val(r,Math.abs(x))}`,x>0?'up':'down'])});
  if(S.insp>b.insp)d.push([`기운 +${S.insp-b.insp}`,'up']);

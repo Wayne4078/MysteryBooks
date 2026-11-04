@@ -14,7 +14,8 @@ const port = srv.address().port, url = `http://localhost:${port}/${book}/index.h
 const browser = await chromium.launch(); const ctx = await browser.newContext({ viewport: { width: 400, height: 900 }, deviceScaleFactor: 1 });
 const page = await ctx.newPage();
 const shoot = async (name) => { await page.waitForTimeout(700); await page.screenshot({ path: out + name + '.png', fullPage: true }); console.log('찍음', name); };
-await page.goto(url); await page.waitForSelector('.cover'); await shoot('00-cover');
+await page.goto(url); await page.waitForSelector('.book'); await shoot('00-book'); // 덮인 책
+await page.evaluate(() => { opened = true; render(); }); await shoot('00-cover');
 const chapters = readdirSync(join(root, book, 'stories')).filter(f => f.endsWith('.json')).sort();
 for (const f of chapters) {
   const B = JSON.parse(readFileSync(join(root, book, 'stories', f), 'utf8'));
@@ -29,7 +30,7 @@ for (const f of chapters) {
       localStorage.setItem('gamebook:' + meta.id, JSON.stringify({ S, markSnap: null }));
     }, [f, S, B.meta]);
     await page.goto(url); await page.waitForFunction(() => typeof B !== 'undefined' && B && B.meta);
-    await page.evaluate(() => { resume(); render(); });
+    await page.evaluate(() => { opened = true; resume(); render(); });
     await shoot(`${f.replace('.json', '')}-${tag}`);
   }
 }
