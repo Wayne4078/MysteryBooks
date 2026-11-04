@@ -359,6 +359,20 @@ html[data-body="serif"] .ch .lbl b,html[data-body="serif"] .tr b{font-weight:700
 .tbtn.mark.on svg{color:var(--accent)}
 .tbtn.font .gg{color:var(--desk-ink)}
 @media (prefers-reduced-motion:reduce){.bump,.st.hit b{animation:none}}
+
+/* 장 끝: 이어서 살기(큰 단추) ↔ 다른 인생(도장 색 상자) */
+.big.go{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;min-height:72px}
+.big.go b{font-size:21px;font-weight:800}
+.big.go small{font-size:16px;font-weight:700;opacity:.85}
+.others{margin-top:22px;padding:18px 16px 16px;background-color:var(--paper);background-image:var(--grain);border:3px double var(--accent);border-radius:2px;box-shadow:0 4px 12px rgba(0,0,0,.3)}
+.others h3{display:flex;align-items:center;gap:10px;margin:0 0 8px;font-family:var(--f-disp);font-weight:800;font-size:22px;color:var(--accent)}
+.others p{margin:0 0 14px;font-size:16px;font-weight:600;color:var(--ink2);text-indent:0}
+.ministamp{display:inline-block;flex:none;font-size:16px;font-weight:800;padding:2px 8px;border:2px double var(--accent);transform:rotate(-4deg)}
+.others .forks{margin-bottom:14px}
+.others .fork{padding-bottom:14px;border-bottom:1.5px dotted var(--line)}
+.big.relive{background:transparent;border:2px solid var(--accent);color:var(--accent)}
+.big.quiet{width:100%;background:transparent;border:1.5px solid var(--line);color:var(--ink2);font-size:18px}
+.forktip{border-color:var(--accent)}
 </style>
 
 <div class="wrap" id="app"><p class="err">책을 펴는 중…</p></div>
@@ -583,7 +597,7 @@ function render(turn){
  if(S.screen==='cover')app.innerHTML=opened?coverView():bookView();
  else if(S.screen==='traits'){app.innerHTML=traitsView();updateScale(true)}
  else if(B.nodes[S.node].end)app.innerHTML=statusBar()+endView();
- else app.innerHTML=statusBar()+pageView(turn,S.check?checkView():markTip()+choicesView())+toolbar();
+ else app.innerHTML=statusBar()+pageView(turn,S.check?checkView():(forkTip()||markTip())+choicesView())+toolbar();
  S.bump=null; /* +1 은 그 쪽에 처음 왔을 때 한 번만 */
  if(turn)window.scrollTo({top:0});
 }
@@ -604,6 +618,13 @@ function toolbar(){
 /* 처음 한 번만: 주사위 선택지가 처음 나오는 쪽에서 책갈피를 알려 준다 (이 기기에 한 번) */
 const TIPKEY='gamebook-tip-mark';
 function tipSeen(set){try{if(set)localStorage.setItem(TIPKEY,'1');return localStorage.getItem(TIPKEY)==='1'}catch(e){return !!set}}
+/* 갈림길 쪽: 고르기 전에 책갈피를 권한다 (꼭은 아니다). 장 끝의 "다른 길로 살아 보기"와 별개로, 이 인생 안에서 되돌아오는 길. */
+function forkTip(){
+ const n=B.nodes[S.node];
+ if(!n.fork||S.check||markSnap||S.marks<=0||S.forkTipSkip===S.node)return '';
+ return `<div class="tip forktip" role="note"><b>${ICON.mark}인생의 갈림길</b><span>여기서 고른 길이 앞으로의 이야기를 바꿉니다. 책갈피를 꽂아 두면, 고른 뒤에도 이 쪽으로 돌아올 수 있어요.</span>
+  <div class="btns"><button class="big" onclick="tipSeen(1);putMark()">책갈피 꽂기</button><button class="big alt" onclick="S.forkTipSkip=S.node;render()">그냥 고를게요</button></div></div>`;
+}
 function markTip(){
  const n=B.nodes[S.node];
  if(S.check||markSnap||S.marks<=0||!choicesOf(n).some(c=>c.check)||tipSeen())return '';
@@ -735,8 +756,12 @@ function updateScale(){
  else{m.className='msg ok';m.textContent=g===b?(g?'저울이 딱 맞았습니다. 출발할 수 있어요.':'아무것도 고르지 않고 출발해도 됩니다.'):'아쉬운 점이 더 무겁네요. 그래도 출발할 수 있어요.';btn.disabled=false}
 }
 
-function forksView(){const F=S.forks||[];if(!F.length)return '';
- return `<h3 class="endsec">인생의 갈림길</h3><div class="forks">${F.map((f,i)=>`<div class="fork"><span><b>${esc(f.name)}</b><i>${esc(f.took)}</i></span><button class="big alt" onclick="relive(${i})">다른 길로 살아 보기</button></div>`).join('')}</div>`;}
+/* 다른 인생: 이어서 사는 길과 확실히 갈라 놓는다 — 도장 색 테두리의 따로 된 상자, 책상 위에. */
+function othersView(){const F=S.forks||[];
+ return `<section class="others" aria-label="다른 인생 살아 보기"><h3><span class="ministamp">다시 살기</span>다른 인생을 살아 보기</h3>
+  ${F.length?`<p>지금 인생은 기록장에 남고, 그날 그 갈림길에서 새 인생이 시작됩니다.</p>
+  <div class="forks">${F.map((f,i)=>`<div class="fork"><span><b>${esc(f.name)}</b><i>이번 인생: ${esc(f.took)}</i></span><button class="big relive" onclick="relive(${i})">그날로 돌아가 다른 길로</button></div>`).join('')}</div>`:''}
+  <button class="big quiet" onclick="restart()">다른 사람으로 처음부터</button></section>`;}
 function livesView(){const L=lives();if(L.length<2)return '';
  return `<h3 class="endsec">지금까지 살아 본 인생</h3><ol class="lives">${L.slice(-4).map((l,k,a)=>{const n=L.length-a.length+k;return `<li><b>${ORD[n]||n+1} 번째 인생</b><span>${esc(l.job)} · ${esc(l.chapter)}${l.took.length?' · '+esc(l.took.join(', ')):''}</span><i>${esc(l.end)}</i></li>`}).join('')}</ol>`;}
 function endView(){
@@ -753,10 +778,10 @@ function endView(){
    ${row('동료',S.comp.join(', ')||'없음')}${row('소지품',S.items.join(', ')||'없음')}
    ${row('전설의 페이지',L.map(c=>c.title).join(', ')||'아직 없음')}${row('대참사 페이지',D.map(c=>c.title).join(', ')||'아직 없음')}
    ${row('찾은 단서',clues.join(', ')||'아직 없음')}${row('운에 맡긴 결과',S.rolls.length?`${S.rolls.length}번 중 ${good}번 잘 됐다`:'없음')}</div>
-  ${forksView()}${livesView()}
-  <div class="next">${esc(B.meta.next)}</div></article>
-  <div class="btns">${B.meta.next_file?`<button class="big" onclick="nextChapter()">다음 장으로 넘어가기 · 기록을 이어받습니다</button>`:''}
-  <button class="big${B.meta.next_file?' alt':''}" onclick="restart()">다른 사람으로 처음부터</button></div>`;
+  ${livesView()}
+  ${B.meta.next_file?'':`<div class="next">${esc(B.meta.next)}</div>`}</article>
+  ${B.meta.next_file?`<div class="btns"><button class="big go" onclick="nextChapter()"><b>이어서 살기</b><small>${esc((B.meta.next||'').split(' — ')[0])}</small></button></div>`:''}
+  ${othersView()}`;
 }
 
 /* ----- 시작 ----- */
