@@ -24,7 +24,7 @@ book = {
  "meta": {
   "id": "chicken-1", "engine": 1, "series": "chicken", "next_file": "stories/chicken2.json", "first_file": "stories/chicken.json",
   "title": "황금닭 사장님", "kicker": "퇴직금으로 가게를 연 사람을 위한 모험 책", "sub": "1장 체험판 · 3월 첫째 주 · 약 10분",
-  "cloth": "#B3261E", "binding": "handbook", "cover_tag": "퇴직하고 가게 여는 사람의 길잡이", "cover_img": "art/shutter.webp", "chapter": "1장", "start": "n1", "jobQ": "은퇴 전, 당신은 무슨 일을 했나요?",
+  "cloth": "#B3261E", "binding": "handbook", "cover_tag": "퇴직하고 가게 여는 사람의 길잡이", "cover_img": "art/cover.webp", "chapter": "1장", "start": "n1", "jobQ": "은퇴 전, 당신은 무슨 일을 했나요?",
   "how": [
    ["읽고 고르기", "선택지를 누르면 그 번호의 페이지로 넘어갑니다."],
    ["주사위", "운에 맡길 때는 책이 주사위를 대신 굴려 줍니다. 아주 잘 구르면 특별한 페이지가 열려요."],

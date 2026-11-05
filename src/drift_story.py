@@ -28,7 +28,7 @@ book = {
  "meta": {
   "id": "drift-1", "engine": 1, "series": "drift", "next_file": "stories/drift2.json", "first_file": "stories/drift.json",
   "title": "표류 일기", "kicker": "은빛 갈매기호 조난자를 위한 모험 책", "sub": "1일째 체험판 · 약 10분",
-  "cloth": "#24423F", "cover_img": "art/cover.webp", "chapter": "1일째", "start": "n1",
+  "cloth": "#24423F", "cover_stamp": "art/cover_stamp.webp", "chapter": "1일째", "start": "n1",
   "how": [
    ["읽고 고르기", "선택지를 누르면 그 번호의 페이지로 넘어갑니다."],
    ["주사위", "운에 맡길 때는 책이 주사위를 대신 굴려 줍니다. 아주 잘 구르면 특별한 페이지가 열려요."],
