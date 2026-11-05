@@ -258,6 +258,10 @@ html[data-body="serif"] .ch .lbl b,html[data-body="serif"] .tr b{font-weight:700
 .bstamp{position:relative;display:block;width:66%;aspect-ratio:629/960;filter:drop-shadow(0 1px 0 rgba(0,0,0,.6)) drop-shadow(0 -.5px 0 rgba(255,240,200,.18))}
 .bstamp::before{content:"";position:absolute;inset:0;background:linear-gradient(128deg,#A8843F 0%,#E6C982 32%,#C9A55E 46%,#F3DEA0 58%,#B38E48 78%,#D9BD74 100%);-webkit-mask:var(--stamp) center/contain no-repeat;mask:var(--stamp) center/contain no-repeat}
 .book.w3 .bstamp::before{opacity:.82}
+/* 권두 삽화: 펼치면 속표지 맞은편에 오는 그림 한 장(meta.frontis, meta.frontis_cap) */
+.bback.fx{flex-direction:column;gap:12px;padding:30px 24px 26px;background:var(--paper) var(--grain);box-shadow:inset 0 0 0 7px var(--cloth),inset -18px 0 22px -12px rgba(0,0,0,.3)}
+.bback.fx img{display:block;width:100%;flex:1 1 auto;min-height:0;object-fit:cover;border:1px solid var(--ink);outline:1px solid var(--ink);outline-offset:3px;filter:sepia(.18)}
+.bback.fx em{font-style:normal;font-size:13px;font-weight:600;color:var(--ink2);text-align:center;word-break:keep-all;line-height:1.5}
 .bhint{margin:0;color:var(--desk-ink);font-size:18px;font-weight:700;letter-spacing:.05em;transition:opacity .3s}
 /* 여는 움직임 */
 .book.open .blid{transform:rotateY(-176deg)}
@@ -722,7 +726,7 @@ function bookView(){const L=lives().length,m=B.meta,d=loadSave(),bind=m.binding|
  const inside=`<span class="binside"><small>${esc(m.kicker||'')}</small><b>${esc(m.title)}</b><em>${esc(m.sub||'')}</em><i>미스터리 북스</i></span>`;
  return `<div class="desk"><div class="bookfit"><button class="book ${bind} w${wear}${(d||L)?' marked':''}" style="--cloth:${esc(m.cloth||'#3A2E22')}" onclick="openBook(this)" aria-label="${esc(m.title)}, 책을 펼칩니다">
   <span class="bpages"></span>${inside}
-  <span class="blid"><span class="bfront">${front}<span class="bwear"></span></span><span class="bback">${bind==='handbook'?'':'<b>藏書</b>'}</span></span>
+  <span class="blid"><span class="bfront">${front}<span class="bwear"></span></span>${m.frontis?`<span class="bback fx"><img src="${esc(m.frontis)}" alt="" onerror="this.remove()"><em>${esc(m.frontis_cap||'')}</em></span>`:`<span class="bback">${bind==='handbook'?'':'<b>藏書</b>'}</span>`}</span>
   <span class="btail"></span><span class="bslip"></span><span class="bear"></span>
  </button></div><p class="bhint">${L?'다시 펼친다':'책을 펼친다'}</p></div>`;}
 /* 책은 300px 꼴로 그려 두고 화면에 꽉 차게 키운다(낡은 자국·끈까지 같이 커진다). */
@@ -736,8 +740,8 @@ function openBook(el){const desk=el.closest('.desk');
  if(el.classList.contains('open'))return go(); /* 넘기는 중에 또 누르면 바로 첫 화면 */
  if(matchMedia('(prefers-reduced-motion: reduce)').matches)return go();
  el.classList.add('open');desk.classList.add('opening'); /* 표지가 넘어가는 동안 책이 살짝 물러나 펼친 두 면이 다 보인다 */
- setTimeout(()=>desk.classList.add('into'),1450);         /* 속표지로 다가간다 */
- setTimeout(go,2150);}
+ setTimeout(()=>desk.classList.add('into'),1900);         /* 속표지로 다가간다 */
+ setTimeout(go,2600);}
 
 function coverView(){
  const d=loadSave(),m=B.meta,rec=loadRecord();
