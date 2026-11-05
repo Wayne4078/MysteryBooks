@@ -405,6 +405,17 @@ html[data-body="serif"] .ch .lbl b,html[data-body="serif"] .tr b{font-weight:700
 /* 작은 컷: 옛날 책 본문 위의 작은 삽화. 큰 삽화는 핵심 장면에만 */
 .plate.cut{width:76%;margin:2px auto 16px}
 .plate.cut img{aspect-ratio:auto}
+
+/* ----- 삽화가 주인공 (2026-11-05 총괄님): 그림은 쪽 폭 끝까지, 상태 숫자는 책 위 얇은 한 줄 ----- */
+.wrap{padding-left:max(10px,env(safe-area-inset-left,0px));padding-right:max(10px,env(safe-area-inset-right,0px));gap:10px}
+.status{background:transparent;background-image:none;box-shadow:none;border:none;padding:4px 6px 0;gap:4px 18px;flex-wrap:nowrap;color:var(--desk-ink);justify-content:flex-start}
+.st{font-size:16px;font-weight:700;gap:4px;color:var(--desk-ink)}
+.st b{font-size:19px;font-weight:800}
+.st small{font-size:15px;color:color-mix(in srgb,var(--desk-ink) 70%,transparent)}
+.st svg{width:18px;height:18px}
+.page{padding-left:18px;padding-right:18px}
+.plate,.plate.cut{width:auto;margin:4px -18px 18px;border:none;border-top:1.5px solid var(--ink);border-bottom:1.5px solid var(--ink)}
+.plate.cut img{aspect-ratio:auto}
 </style>
 
 <div class="wrap" id="app"><p class="err">책을 펴는 중…</p></div>
@@ -637,7 +648,7 @@ function statusBar(){
  const bp=S.bump||{},bump=(k,txt)=>{const v=bp[k];if(!v)return'';return `<span class="bump ${v>0?'up':'down'}" aria-hidden="true">${v>0?'+':'−'}${txt}</span>`};
  const cls=k=>bp[k]?` hit ${bp[k]>0?'up':'down'}`:'';
  return `<div class="status" role="status">${B.resources.map(r=>`<div class="st${cls(r.id)}">${ICON[r.icon]||''}${r.name} <b>${val(r,S.res[r.id])}</b>${S.max[r.id]!=null&&!r.unit?`<small>/${S.max[r.id]}</small>`:''}${bump(r.id,val(r,Math.abs(bp[r.id]||0)))}</div>`).join('')}
-  <div class="st${cls('insp')}">${ICON.insp}기운 <b>${S.insp}</b>${bump('insp',Math.abs(bp.insp||0))}</div><div class="st">${ICON.luck}행운 <b>${S.luck}</b></div><div class="day">${esc(S.when||B.meta.chapter)}</div></div>`;
+  <div class="st${cls('insp')}">${ICON.insp}기운 <b>${S.insp}</b>${bump('insp',Math.abs(bp.insp||0))}</div><div class="day">${esc(S.when||B.meta.chapter)}</div></div>`;
 }
 function toolbar(){
  const serif=document.documentElement.dataset.body==='serif';
