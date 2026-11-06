@@ -419,6 +419,13 @@ html[data-body="serif"] .ch .lbl b,html[data-body="serif"] .tr b{font-weight:700
 .page{padding-left:18px;padding-right:18px}
 .plate,.plate.cut{width:auto;margin:4px -18px 18px;border:none;border-top:1.5px solid var(--ink);border-bottom:1.5px solid var(--ink)}
 .plate.cut img{aspect-ratio:auto}
+
+/* 저울이 안 맞을 때: 흐린 단추 대신 할 일을 말하는 단추 + 아쉬운 점 목록이 한 번 반짝 */
+.stickynote{margin:0 0 8px;font-size:17px;font-weight:700;color:var(--desk-ink);text-align:center;word-break:keep-all}
+.big.need{background:var(--bad);border-color:var(--bad);color:#fff}
+.tlist.nudge{animation:nudge 1.4s ease-out}
+@keyframes nudge{0%,100%{box-shadow:0 0 0 0 transparent}25%,60%{box-shadow:0 0 0 4px var(--bad)}}
+@media (prefers-reduced-motion:reduce){.tlist.nudge{animation:none;outline:3px solid var(--bad)}}
 </style>
 
 <div class="wrap" id="app"><p class="err">책을 펴는 중…</p></div>
@@ -798,10 +805,15 @@ function traitsView(){
   <p class="msg" id="smsg"></p>
  </div>
  <h2 class="sec">좋은 점</h2><div class="tlist">${B.traits.good.map(t=>card(T[t.id])).join('')}</div>
- <h2 class="sec">아쉬운 점</h2><div class="tlist">${B.traits.bad.map(t=>card(T[t.id])).join('')}</div>
- <div class="btns sticky"><button class="big" id="startBtn" onclick="begin()">이 사람으로 출발하기</button>
+ <h2 class="sec" id="badSec">아쉬운 점</h2><div class="tlist" id="badList">${B.traits.bad.map(t=>card(T[t.id])).join('')}</div>
+ <div class="btns sticky"><p class="stickynote" id="snote" hidden></p><button class="big" id="startBtn" onclick="startOrNudge()">이 사람으로 출발하기</button>
   <button class="big alt" onclick="S.screen='cover';render(true)">직업 다시 고르기</button></div>`;
 }
+/* 이유 없이 안 눌리는 단추는 두지 않는다: 저울이 안 맞으면 단추가 할 일을 말해 주고, 누르면 아쉬운 점으로 데려간다. */
+function startOrNudge(){const{g,b}=weights();if(g<=b)return begin();
+ const sec=document.getElementById('badSec'),list=document.getElementById('badList');
+ sec.scrollIntoView({behavior:matchMedia('(prefers-reduced-motion: reduce)').matches?'auto':'smooth',block:'start'});
+ list.classList.remove('nudge');void list.offsetWidth;list.classList.add('nudge');}
 function toggleTrait(id){const i=S.traits.indexOf(id);i<0?S.traits.push(id):S.traits.splice(i,1);updateScale();}
 function updateScale(){
  const{g,b}=weights(),a=Math.max(-14,Math.min(14,(b-g)*5));
@@ -811,8 +823,11 @@ function updateScale(){
  document.getElementById('bW').textContent=b?'●'.repeat(b):'';
  Object.values(T).forEach(t=>document.getElementById('t-'+t.id)?.setAttribute('aria-pressed',S.traits.includes(t.id)));
  const m=document.getElementById('smsg'),btn=document.getElementById('startBtn');
- if(g>b){m.className='msg no';m.textContent='좋은 점이 더 무겁습니다. 아쉬운 점을 더 골라 저울을 맞춰 주세요.';btn.disabled=true}
- else{m.className='msg ok';m.textContent=g===b?(g?'저울이 딱 맞았습니다. 출발할 수 있어요.':'아무것도 고르지 않고 출발해도 됩니다.'):'아쉬운 점이 더 무겁네요. 그래도 출발할 수 있어요.';btn.disabled=false}
+ const note=document.getElementById('snote');
+ if(g>b){m.className='msg no';m.textContent='좋은 점이 더 무겁습니다. 아쉬운 점을 더 골라 저울을 맞춰 주세요.';
+  btn.textContent='아쉬운 점 하나 더 고르기 ↓';btn.classList.add('need');note.hidden=false;note.textContent='좋은 점만큼 아쉬운 점도 있어야 출발할 수 있어요.'}
+ else{m.className='msg ok';m.textContent=g===b?(g?'저울이 딱 맞았습니다. 출발할 수 있어요.':'아무것도 고르지 않고 출발해도 됩니다.'):'아쉬운 점이 더 무겁네요. 그래도 출발할 수 있어요.';
+  btn.textContent='이 사람으로 출발하기';btn.classList.remove('need');note.hidden=true}
 }
 
 /* 다른 인생: 이어서 사는 길과 확실히 갈라 놓는다 — 도장 색 테두리의 따로 된 상자, 책상 위에. */
