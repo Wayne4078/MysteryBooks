@@ -27,7 +27,7 @@ def IF(c, t, e=None, group=None):
 book = {
  "meta": {
   "id": "drift-1", "engine": 1, "series": "drift", "next_file": "stories/drift2.json", "first_file": "stories/drift.json",
-  "title": "표류 일기", "kicker": "은빛 갈매기호 조난자를 위한 모험 책", "sub": "1일째 체험판 · 약 10분",
+  "title": "표류 일기", "kicker": "은빛 갈매기호 조난자를 위한 모험 책", "sub": "제1권 · 사흘간의 기록",
   "cloth": "#24423F", "cover_stamp": "art/cover_stamp.webp", "frontis": "art/frontis.webp", "frontis_cap": "눈을 떴을 때 처음 들린 건 파도 소리였다.", "chapter": "1일째", "start": "n1",
   "how": [
    ["읽고 고르기", "선택지를 누르면 그 번호의 페이지로 넘어갑니다."],
