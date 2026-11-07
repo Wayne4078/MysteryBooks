@@ -51,7 +51,11 @@
     "true_end",
     "낡은 수첩"
    ]
-  ]
+  ],
+  "cloth": "#24423F",
+  "cover_stamp": "art/cover_stamp.webp",
+  "frontis": "art/frontis.webp",
+  "frontis_cap": "눈을 떴을 때 처음 들린 건 파도 소리였다."
  },
  "resources": [
   {

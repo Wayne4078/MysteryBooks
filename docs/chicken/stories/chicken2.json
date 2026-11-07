@@ -56,7 +56,11 @@
     "sauce_idea",
     "“양념 따로 팔아요?”"
    ]
-  ]
+  ],
+  "binding": "handbook",
+  "cloth": "#B3261E",
+  "cover_img": "art/cover.webp",
+  "cover_tag": "퇴직하고 가게 여는 사람의 길잡이"
  },
  "resources": [
   {

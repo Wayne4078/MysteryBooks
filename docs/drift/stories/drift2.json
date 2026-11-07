@@ -52,7 +52,11 @@
     "deja",
     "박 여사의 \"어제도 했나?\""
    ]
-  ]
+  ],
+  "cloth": "#24423F",
+  "cover_stamp": "art/cover_stamp.webp",
+  "frontis": "art/frontis.webp",
+  "frontis_cap": "눈을 떴을 때 처음 들린 건 파도 소리였다."
  },
  "resources": [
   {

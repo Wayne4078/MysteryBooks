@@ -10,6 +10,7 @@ for src in src/${BOOK}_story.py src/${BOOK}[0-9]*_story.py; do
   [ -f "$src" ] || continue
   name=$(basename "$src" _story.py)
   python3 "$src" >/dev/null
+  python3 tools/inherit_cover.py stories/${name}.json stories/${BOOK}.json
   node tools/lint.mjs stories/${name}.json
   cp stories/${name}.json docs/${BOOK}/stories/
   CHAPTERS="$CHAPTERS $name"

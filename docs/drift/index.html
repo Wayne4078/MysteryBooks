@@ -426,6 +426,19 @@ html[data-body="serif"] .ch .lbl b,html[data-body="serif"] .tr b{font-weight:700
 .tlist.nudge{animation:nudge 1.4s ease-out}
 @keyframes nudge{0%,100%{box-shadow:0 0 0 0 transparent}25%,60%{box-shadow:0 0 0 4px var(--bad)}}
 @media (prefers-reduced-motion:reduce){.tlist.nudge{animation:none;outline:3px solid var(--bad)}}
+
+/* 잠깐 쉬기 */
+.restbtn{margin-left:auto;display:inline-flex;align-items:center;gap:4px;min-height:48px;min-width:48px;padding:0 12px;border:1.5px solid color-mix(in srgb,var(--desk-ink) 45%,transparent);border-radius:24px;background:transparent;color:var(--desk-ink);font:inherit;font-size:16px;font-weight:700;cursor:pointer}
+.restbtn svg{width:16px;height:16px}
+.status .day{display:none}
+.pause{position:fixed;inset:0;z-index:50;background:rgba(20,16,12,.72);display:flex;align-items:center;justify-content:center;padding:20px}
+.pause .sheet{width:min(100%,420px);background:var(--paper) var(--grain);color:var(--ink);border-radius:6px;padding:26px 20px 20px;display:flex;flex-direction:column;gap:12px;box-shadow:0 20px 50px rgba(0,0,0,.5)}
+.pause h2{margin:0;font-family:var(--f-disp);font-size:26px;text-align:center}
+.pause p{margin:0 0 6px;text-align:center;font-size:17px;color:var(--ink2)}
+.pause .big.alt{color:var(--ink);border-color:var(--ink)}
+/* 하루 끝 쉼표 */
+.btns .big.quiet{color:var(--desk-ink);border-color:color-mix(in srgb,var(--desk-ink) 45%,transparent)}
+.dayrest{margin:4px 2px 0;color:var(--desk-ink);font-size:18px;line-height:1.6;text-align:center;word-break:keep-all}
 </style>
 
 <div class="wrap" id="app"><p class="err">책을 펴는 중…</p></div>
@@ -435,7 +448,7 @@ html[data-body="serif"] .ch .lbl b,html[data-body="serif"] .tr b{font-weight:700
    이야기는 stories/*.json 에 있고, 이 파일은 어떤 책이든 같은 방식으로 읽는다.
    형식은 src/drift_story.py 맨 위 설명, 점검은 tools/lint.mjs, 시험은 tools/sim.mjs, 찍어내기는 tools/build.sh. */
 const STORY='stories/drift.json';
-const ICON={
+const ICON={rest:'<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="6" y="5" width="4" height="14" rx="1.5" fill="currentColor"/><rect x="14" y="5" width="4" height="14" rx="1.5" fill="currentColor"/></svg>',
  heart:'<svg viewBox="0 0 24 24" aria-hidden="true"><path fill="var(--bad)" d="M12 21s-7.5-4.6-9.5-9.4C1 7.9 3.4 4 7.2 4c2 0 3.6 1.1 4.8 2.7C13.2 5.1 14.8 4 16.8 4 20.6 4 23 7.9 21.5 11.6 19.5 16.4 12 21 12 21z"/></svg>',
  drop:'<svg viewBox="0 0 24 24" aria-hidden="true"><path fill="var(--accent)" d="M12 2s7 7.6 7 12.5A7 7 0 0 1 5 14.5C5 9.6 12 2 12 2z"/></svg>',
  coin:'<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9" fill="var(--sun)"/><circle cx="12" cy="12" r="5.5" fill="none" stroke="var(--sun-ink)" stroke-width="1.6"/></svg>',
@@ -495,7 +508,7 @@ function saveLife(){if(S.lifeSaved)return;S.lifeSaved=1;const end=paras(B.nodes[
 function relive(i){const f=(S.forks||[])[i];if(!f)return;
  const nS=clone(f.snap);nS.reliveAvoid={node:f.node,ti:f.ti,took:f.took};nS.lifeSaved=0;nS.lifeId=newLife();markSnap=null; /* 다른 길 = 다른 인생 */
  if(f.file&&f.file!==CUR){app.innerHTML='<p class="err">그날로 돌아가는 중…</p>';try{localStorage.setItem(CKEY(),f.file)}catch(e){};load(f.file,{S:nS})}
- else{S=nS;save();render(true)}}
+ else{try{localStorage.setItem(CKEY(),CUR)}catch(e){};S=nS;save();render(true)}}
 const ORD=['첫','두','세','네','다섯','여섯','일곱','여덟','아홉','열'];
 
 function fresh(){return{screen:'cover',job:null,traits:[],res:{},max:{},insp:0,luck:1,marks:2,items:[],comp:[],flags:{},crits:[],node:null,check:null,rolls:[],delta:[],when:null,fortune:1,streak:0,forks:[],lifeId:null,path:[]};}
@@ -645,12 +658,36 @@ function restart(){clearSave();clearRecord();S=fresh();markSnap=null;opened=fals
  if(B.meta.first_file&&B.meta.first_file!==CUR){app.innerHTML='<p class="err">책을 펴는 중…</p>';load(B.meta.first_file,{});}else render(true);}
 function resume(){const d=loadSave();if(d){S=d.S;markSnap=d.markSnap;render(true)}}
 
+/* ----- 잠깐 쉬기 · 뒤로 가기 (아린플레이 공통 규칙) -----
+   읽는 중 위쪽 '쉬기' 단추 → 잠깐 쉬기(계속 읽기 / 책갈피 쪽으로 / 책 덮기). 읽던 곳은 늘 저장돼 있어 "처음부터"는 두지 않는다
+   (새 사람으로 사는 길은 책 덮은 뒤 첫 화면과 장 끝에 있다).
+   폰·토스 위쪽 바 뒤로 가기: 읽는 중이면 앱을 닫지 않고 잠깐 쉬기를 연다 → 한 번 더 누르면 닫힌다(읽던 곳 저장).
+   성격 고르기 → 직업 고르기, 첫 화면 → 덮인 책, 덮인 책에서 뒤로 가기는 앱을 닫는다. */
+let paused=false,guarded=false;
+function guard(){const H=window.history;if(guarded||!H||!H.pushState)return;try{H.pushState({mb:1},'');guarded=true}catch(e){}}
+function openPause(){paused=true;render()}
+function closePause(){paused=false;render()}
+function closeBook(){paused=false;if(S.screen!=='cover')save();S=fresh();markSnap=null;opened=false;render(true)}
+function pauseView(){return `<div class="pause" role="dialog" aria-modal="true" aria-label="잠깐 쉬기"><div class="sheet"><h2>잠깐 쉬기</h2><p>읽던 곳은 그대로 남아 있어요.</p>
+ <button class="big" onclick="closePause()">계속 읽기</button>
+ ${markSnap?`<button class="big alt" onclick="paused=false;backToMark()">책갈피 꽂은 ${B.nodes[markSnap.node].n}쪽으로</button>`:''}
+ <button class="big alt" onclick="closeBook()">책 덮기</button></div></div>`}
+function onBack(){guarded=false;
+ if(paused){try{window.history.back()}catch(e){};return}               /* 쉬는 중에 또 뒤로 → 닫는다 */
+ if(!opened)return;
+ if(S.screen==='traits'){S.screen='cover';render(true);return}
+ if(S.screen==='cover'){opened=false;render(true);return}              /* 첫 화면 → 덮인 책 (여기서 또 뒤로 → 닫힘) */
+ openPause();}
+if(window.addEventListener)window.addEventListener('popstate',onBack);
+
 /* ----- 화면 ----- */
 function render(turn){
  if(S.screen==='cover'){app.innerHTML=opened?coverView():bookView();if(!opened)fitBook()}
  else if(S.screen==='traits'){app.innerHTML=traitsView();updateScale(true)}
  else if(B.nodes[S.node].end)app.innerHTML=statusBar()+endView();
  else app.innerHTML=statusBar()+pageView(turn,S.check?checkView():(forkTip()||markTip())+choicesView())+toolbar();
+ if(paused&&S.screen!=='cover'&&S.screen!=='traits')app.innerHTML+=pauseView();
+ if(opened&&!paused)guard();
  S.bump=null; /* +1 은 그 쪽에 처음 왔을 때 한 번만 */
  if(turn)window.scrollTo({top:0});
 }
@@ -658,7 +695,7 @@ function statusBar(){
  const bp=S.bump||{},bump=(k,txt)=>{const v=bp[k];if(!v)return'';return `<span class="bump ${v>0?'up':'down'}" aria-hidden="true">${v>0?'+':'−'}${txt}</span>`};
  const cls=k=>bp[k]?` hit ${bp[k]>0?'up':'down'}`:'';
  return `<div class="status" role="status">${B.resources.map(r=>`<div class="st${cls(r.id)}">${ICON[r.icon]||''}${r.name} <b>${val(r,S.res[r.id])}</b>${S.max[r.id]!=null&&!r.unit?`<small>/${S.max[r.id]}</small>`:''}${bump(r.id,val(r,Math.abs(bp[r.id]||0)))}</div>`).join('')}
-  <div class="st${cls('insp')}">${ICON.insp}기운 <b>${S.insp}</b>${bump('insp',Math.abs(bp.insp||0))}</div><div class="day">${esc(S.when||B.meta.chapter)}</div></div>`;
+  <div class="st${cls('insp')}">${ICON.insp}기운 <b>${S.insp}</b>${bump('insp',Math.abs(bp.insp||0))}</div><div class="day">${esc(S.when||B.meta.chapter)}</div><button class="restbtn" onclick="openPause()" aria-label="잠깐 쉬기">${ICON.rest}쉬기</button></div>`;
 }
 function toolbar(){
  const serif=document.documentElement.dataset.body==='serif';
@@ -764,6 +801,8 @@ function openBook(el){const desk=el.closest('.desk');
  setTimeout(()=>desk.classList.add('into'),1900);         /* 속표지로 다가간다 */
  setTimeout(go,2600);}
 
+/* 받침 따라 '로/으로' (ㄹ 받침은 '로') */
+const ro=w=>{const c=(w||'').charCodeAt(w.length-1)-0xAC00;if(c<0||c>11171)return w+'(으)로';const j=c%28;return w+(j===0||j===8?'로':'으로')};
 function coverView(){
  const d=loadSave(),m=B.meta,rec=loadRecord();
  /* 지난 장 기록이 이 장으로 이어지는 것이면 "이어서 읽기"를 맨 위에 */
@@ -771,7 +810,7 @@ function coverView(){
  return `<article class="page cover turn"><p class="sub">${esc(m.kicker)}</p><h1>${esc(m.title)}</h1><p class="sub">${esc(m.sub)}</p>
   <div class="how">${(m.how||[]).map(([a,b])=>`<div><b>${esc(a)}</b><span>${esc(b)}</span></div>`).join('')}</div></article>
   ${d&&!B.nodes[d.S.node]?.end?`<div class="btns"><button class="big" onclick="resume()">읽던 곳부터 · ${B.nodes[d.S.node].n}쪽</button></div>`:''}
-  ${carry?`<div class="btns"><button class="big" onclick="S=fresh();begin(loadRecord())">${esc(rec.chapter)}에 이어서 · ${esc(B.jobs.find(j=>j.id===rec.job)?.name||'그 사람')}으로 계속</button></div>`:''}
+  ${carry?`<div class="btns"><button class="big" onclick="S=fresh();begin(loadRecord())">${esc(rec.chapter)}에 이어서 · ${esc(ro(B.jobs.find(j=>j.id===rec.job)?.name||'그 사람'))} 계속</button></div>`:''}
   <h2 class="sec">${carry?'아니면, 다른 사람으로 새로 시작하기':esc(m.jobQ||'은퇴 전, 당신은 누구였나요?')}</h2>
   <div class="choices">${B.jobs.map(j=>`<button class="ch" onclick="S.job='${j.id}';S.screen='traits';S.traits=[];render(true)"><span class="lbl"><b>${esc(j.name)}</b><i>${esc(j.desc)}</i></span><span class="to">→</span></button>`).join('')}</div>`;
 }
@@ -840,6 +879,8 @@ function livesView(){const L=lives();if(L.length<2)return '';
  return `<h3 class="endsec">지금까지 살아 본 인생</h3><ol class="lives">${L.slice(-4).map((l,k,a)=>{const n=L.length-a.length+k;return `<li><b>${ORD[n]||n+1} 번째 인생</b><span>${esc(l.job)} · ${esc(l.chapter)}${l.took.length?' · '+esc(l.took.join(', ')):''}</span><i>${esc(l.end)}</i></li>`}).join('')}</ol>`;}
 function endView(){
  saveLife();
+ /* 하루치를 다 읽으면 다음 날이 '지금 읽는 곳'이 된다 — 여기서 책을 덮어도 다음에 펴면 다음 날 첫머리(이어서 읽기)부터 */
+ if(B.meta.next_file){saveRecord();try{localStorage.setItem(CKEY(),B.meta.next_file)}catch(e){}}
  const L=S.crits.filter(c=>c.kind==='legend'),D=S.crits.filter(c=>c.kind==='disaster');
  const clues=(B.meta.clues||[]).filter(([f])=>S.flags[f]).map(([,l])=>l);
  const good=S.rolls.filter(o=>o==='ok'||o==='crit').length;
@@ -854,7 +895,9 @@ function endView(){
    ${row('찾은 단서',clues.join(', ')||'아직 없음')}${row('운에 맡긴 결과',S.rolls.length?`${S.rolls.length}번 중 ${good}번 잘 됐다`:'없음')}</div>
   ${livesView()}
   ${B.meta.next_file?'':`<div class="next">${esc(B.meta.next)}</div>`}</article>
-  ${B.meta.next_file?`<div class="btns"><button class="big go" onclick="nextChapter()"><b>이어서 살기</b><small>${esc((B.meta.next||'').split(' — ')[0])}</small></button></div>`:''}
+  ${B.meta.next_file?`<p class="dayrest">하루치를 다 읽으셨어요. 여기서 책을 덮어 두셔도 됩니다. 다음에 펴면 <b>${esc((B.meta.next||'').split(' — ')[0])}</b>부터 이어집니다.</p>
+  <div class="btns"><button class="big go" onclick="nextChapter()"><b>이어서 살기</b><small>${esc((B.meta.next||'').split(' — ')[0])}</small></button>
+  <button class="big quiet" onclick="closeBook()">오늘은 여기까지 · 책 덮기</button></div>`:''}
   ${othersView()}`;
 }
 
